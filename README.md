@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/banner.png" alt="Hermes Agent" width="100%">
+  <img src="assets/banner.png" alt="Hermes AgentCyber" width="100%">
 </p>
 
-# Hermes Agent ☤
+# Hermes AgentCyber ☤
 
 <p align="center">
   <a href="https://hermes-agent.nousresearch.com/docs/"><img src="https://img.shields.io/badge/Docs-hermes--agent.nousresearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
@@ -12,19 +12,164 @@
   <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=for-the-badge" alt="中文"></a>
 </p>
 
-**The self-improving AI agent built by [Nous Research](https://nousresearch.com).** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
+**Hermes AgentCyber is a cybersecurity-focused fork of [Hermes Agent](https://github.com/NousResearch/hermes-agent) — the self-improving AI agent by [Nous Research](https://nousresearch.com).** It adds a native cybersecurity toolkit (threat intelligence, IOC extraction, vulnerability triage, incident response) and a live USB system that boots any x86-64 PC into an autonomous cyber operations environment. The base agent's learning loop, multi-platform gateway, and subagent delegation are all intact.
 
-Use any model you want — [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (200+ models), [NovitaAI](https://novita.ai) (AI-native cloud for Model API, Agent Sandbox, and GPU Cloud), [NVIDIA NIM](https://build.nvidia.com) (Nemotron), [Xiaomi MiMo](https://platform.xiaomimimo.com), [z.ai/GLM](https://z.ai), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), [Hugging Face](https://huggingface.co), OpenAI, or your own endpoint. Switch with `hermes model` — no code changes, no lock-in.
+Use any model — [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (200+ models), OpenAI, Anthropic, Bedrock, or your own endpoint. Switch with `hermes model` — no lock-in.
 
 <table>
+<tr><td><b>Cybersecurity toolkit</b></td><td>Native tools for CVE lookup (NVD), IOC reputation (VirusTotal, AbuseIPDB), MITRE ATT&CK TTP lookup, IOC extraction from logs/reports, CVSS+EPSS vulnerability triage, and an in-session incident response playbook. All in the <code>cyber</code> toolset — no wiring required.</td></tr>
+<tr><td><b>Live USB — plug in and act</b></td><td>Build a bootable Debian 12 ISO with hermes pre-installed. Boot any PC, complete a 60-second first-boot wizard, and the gateway starts automatically. Three modes: gateway (Telegram/Slack C2), interactive terminal, or headless network scan.</td></tr>
+<tr><td><b>SOC audit trail</b></td><td>Set <code>HERMES_CYBER_AUDIT=true</code> to get a tamper-evident NDJSON log of every tool call at <code>~/.hermes/logs/cyber_audit.jsonl</code>. Credentials redacted. File mode 0600.</td></tr>
+<tr><td><b>Protected subagent operations</b></td><td>In-flight subagents (parallel CVE triage, recon sweeps) are shielded from accidental interrupts — a follow-up message queues rather than killing running work. <code>/stop</code> still force-cancels everything.</td></tr>
 <tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
 <tr><td><b>Lives where you do</b></td><td>Telegram, Discord, Slack, WhatsApp, Signal, and CLI — all from a single gateway process. Voice memo transcription, cross-platform conversation continuity.</td></tr>
 <tr><td><b>A closed learning loop</b></td><td>Agent-curated memory with periodic nudges. Autonomous skill creation after complex tasks. Skills self-improve during use. FTS5 session search with LLM summarization for cross-session recall. <a href="https://github.com/plastic-labs/honcho">Honcho</a> dialectic user modeling. Compatible with the <a href="https://agentskills.io">agentskills.io</a> open standard.</td></tr>
-<tr><td><b>Scheduled automations</b></td><td>Built-in cron scheduler with delivery to any platform. Daily reports, nightly backups, weekly audits — all in natural language, running unattended.</td></tr>
-<tr><td><b>Delegates and parallelizes</b></td><td>Spawn isolated subagents for parallel workstreams. Write Python scripts that call tools via RPC, collapsing multi-step pipelines into zero-context-cost turns.</td></tr>
-<tr><td><b>Runs anywhere, not just your laptop</b></td><td>Seven terminal backends — local, Docker, SSH, Singularity, Modal, Daytona, and Vercel Sandbox. Daytona and Modal offer serverless persistence — your agent's environment hibernates when idle and wakes on demand, costing nearly nothing between sessions. Run it on a $5 VPS or a GPU cluster.</td></tr>
+<tr><td><b>Delegates and parallelizes</b></td><td>Spawn isolated subagents for parallel workstreams — run simultaneous CVE triage, network scans, and log analysis. Write Python scripts that call tools via RPC, collapsing multi-step pipelines into zero-context-cost turns.</td></tr>
+<tr><td><b>Runs anywhere</b></td><td>Seven terminal backends — local, Docker, SSH, Singularity, Modal, Daytona, and Vercel Sandbox. Or boot directly from the live USB on any x86-64 machine.</td></tr>
 <tr><td><b>Research-ready</b></td><td>Batch trajectory generation, trajectory compression for training the next generation of tool-calling models.</td></tr>
 </table>
+
+---
+
+## Cybersecurity Features
+
+### Cyber Toolset
+
+Enable the `cyber` toolset in `config.yaml` to get four purpose-built security tools:
+
+```yaml
+toolsets:
+  enabled: [cyber, web, terminal, file, delegation]
+```
+
+| Tool | What it does | APIs |
+|---|---|---|
+| `threat_intel` | CVE lookup, IOC reputation, MITRE ATT&CK TTP | NVD v2 (free), VirusTotal (`VT_API_KEY`), AbuseIPDB (`ABUSEIPDB_API_KEY`), ATT&CK TAXII (free) |
+| `extract_iocs` | Extract IPs, domains, hashes, URLs, CVEs, emails from any text. Handles analyst defanging (`hxxp`, `[.]`, `[at]`). | None — local |
+| `vuln_triage` | CVSS + EPSS exploitation probability + asset matching → CRITICAL/HIGH/MEDIUM/LOW priority | NVD v2 (free), EPSS first.org (free) |
+| `ir_incident` | IR state machine: create incident, timeline, evidence log, markdown report | None — in-session |
+
+**Example — triage a CVE from Telegram:**
+```
+"Is CVE-2024-3400 critical for my Palo Alto firewalls?"
+→ vuln_triage correlates CVSS 10.0 + EPSS 94th percentile + asset match
+→ Returns: CRITICAL — patch immediately (within 24 hours)
+```
+
+**Example — parse a phishing email:**
+```
+"Here's the raw email [paste]. What's in it?"
+→ extract_iocs pulls IPs, domains, URLs, hashes
+→ threat_intel checks each IOC's reputation in parallel via delegate_task
+→ ir_incident opens a P2 incident and logs all IOCs as evidence
+```
+
+### Cybersecurity Skills
+
+Three agent playbooks live in `skills/cybersecurity/` and are available as slash commands:
+
+| Skill | What it does |
+|---|---|
+| `threat-intel` | Full TI synthesis workflow: extract → enrich in parallel → map to ATT&CK → brief |
+| `ir-copilot` | End-to-end IR lifecycle: triage → investigation → containment → report |
+| `vuln-triage` | CVE backlog prioritisation with bulk parallel triage pattern |
+
+### SOC Audit Log
+
+```bash
+export HERMES_CYBER_AUDIT=true
+hermes gateway start
+```
+
+Every `agent:step` (tool name + redacted inputs + result preview) and `agent:end` (stop reason, token counts) is appended to `~/.hermes/logs/cyber_audit.jsonl` in NDJSON format. The file is created with mode `0600`. Rotate externally with `logrotate`.
+
+### Optional API Keys
+
+Add to `~/.hermes/.env` — all cyber tools degrade gracefully when keys are absent:
+
+```bash
+VT_API_KEY=your-virustotal-key        # IOC reputation via VirusTotal
+ABUSEIPDB_API_KEY=your-abuseipdb-key  # IP reputation via AbuseIPDB
+```
+
+NVD, EPSS (first.org), and MITRE ATT&CK TAXII are all free with no API key required.
+
+---
+
+## Live USB
+
+Build a bootable USB that turns any x86-64 PC into a Hermes cyber operations node.
+
+### Build the ISO
+
+Requires a Linux host with `debootstrap`, `squashfs-tools`, `xorriso`, `grub-efi-amd64-bin`:
+
+```bash
+# Install build deps (Debian/Ubuntu)
+sudo apt-get install -y debootstrap squashfs-tools xorriso \
+  grub-efi-amd64-bin grub-pc-bin mtools dosfstools
+
+# Build (bundles the current repo — no internet needed on the target PC)
+sudo live-usb/build_iso.sh
+
+# Write to USB (/dev/sdb — check with: sudo live-usb/write_usb.sh --list)
+sudo live-usb/write_usb.sh --device /dev/sdb --verify
+```
+
+The ISO boots on both UEFI and legacy BIOS systems. Default size is ~2 GB.
+
+### Boot Modes (GRUB menu, 5 s timeout)
+
+| Mode | What happens |
+|---|---|
+| **Gateway** | First-boot wizard → configures Telegram token + API key → `hermes-gateway.service` starts → take commands from your phone |
+| **Terminal** | First-boot wizard → drops into interactive `hermes` agent shell |
+| **Headless scan** | Skips wizard, reads provisioned config → autonomous network discovery → CVE triage → IR report saved to `~/hermes-scan-<date>.md` |
+| **Forensic** | `noautomount noswap` — safe for evidence collection; no drives auto-mounted |
+| **Persistence** | Changes survive reboots via `casper-rw` partition |
+
+### Pre-provision (fleet / ops deployment)
+
+Skip the first-boot wizard entirely by injecting credentials before deployment:
+
+```bash
+# From config directory
+sudo live-usb/provision.sh --usb /dev/sdb --config ~/.hermes
+
+# From individual flags
+sudo live-usb/provision.sh --usb /dev/sdb \
+  --telegram-token "7xxx:AAA..." \
+  --allowed-users "123456789" \
+  --model-key "sk-ant-..." \
+  --audit
+```
+
+The provisioned config is written to a small FAT32 partition after the ISO. On first boot, the wizard detects it and starts the gateway automatically.
+
+### From Inside the Agent
+
+The `live_usb` tool lets you orchestrate USB creation from a chat message:
+
+```bash
+hermes tools --enable live_usb
+```
+
+```
+"List my USB drives"         → live_usb(action="list_usb")
+"Check if I can build"       → live_usb(action="status")
+"Build a headless-scan ISO"  → live_usb(action="build", headless_scan=true)
+"Write it to /dev/sdb"       → live_usb(action="write", device="/dev/sdb")
+"Provision with my config"   → live_usb(action="provision", device="/dev/sdb", config="~/.hermes")
+```
+
+### On the Running USB
+
+```bash
+hermes-live start / stop / restart / status / logs
+hermes-live scan 192.168.1.0/24    # ad-hoc cyber sweep → markdown report
+hermes-live shell                   # drop into interactive agent
+hermes-live config                  # edit ~/.hermes/config.yaml
+```
 
 ---
 
@@ -122,7 +267,7 @@ For the full command lists, see the [CLI guide](https://hermes-agent.nousresearc
 
 ## Documentation
 
-All documentation lives at **[hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs/)**:
+Base agent docs live at **[hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs/)**. AgentCyber-specific features are documented in this repo under `skills/cybersecurity/` and `live-usb/`.
 
 | Section | What's Covered |
 |---------|---------------|
@@ -136,11 +281,9 @@ All documentation lives at **[hermes-agent.nousresearch.com/docs](https://hermes
 | [Memory](https://hermes-agent.nousresearch.com/docs/user-guide/features/memory) | Persistent memory, user profiles, best practices |
 | [MCP Integration](https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp) | Connect any MCP server for extended capabilities |
 | [Cron Scheduling](https://hermes-agent.nousresearch.com/docs/user-guide/features/cron) | Scheduled tasks with platform delivery |
-| [Context Files](https://hermes-agent.nousresearch.com/docs/user-guide/features/context-files) | Project context that shapes every conversation |
 | [Architecture](https://hermes-agent.nousresearch.com/docs/developer-guide/architecture) | Project structure, agent loop, key classes |
-| [Contributing](https://hermes-agent.nousresearch.com/docs/developer-guide/contributing) | Development setup, PR process, code style |
-| [CLI Reference](https://hermes-agent.nousresearch.com/docs/reference/cli-commands) | All commands and flags |
-| [Environment Variables](https://hermes-agent.nousresearch.com/docs/reference/environment-variables) | Complete env var reference |
+| **[Cyber Toolset](skills/cybersecurity/)** | **TI synthesis, IR co-pilot, vuln triage playbooks** |
+| **[Live USB](live-usb/)** | **Build scripts, provision guide, boot modes** |
 
 ---
 
@@ -177,16 +320,16 @@ See `hermes claw migrate --help` for all options, or use the `openclaw-migration
 
 We welcome contributions! See the [Contributing Guide](https://hermes-agent.nousresearch.com/docs/developer-guide/contributing) for development setup, code style, and PR process.
 
-Quick start for contributors — clone and go with `setup-hermes.sh`:
+Quick start for contributors:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
-cd hermes-agent
+git clone https://github.com/breakingcircuits1337/hermes-agentcyber.git
+cd hermes-agentcyber
 ./setup-hermes.sh     # installs uv, creates venv, installs .[all], symlinks ~/.local/bin/hermes
 ./hermes              # auto-detects the venv, no need to `source` first
 ```
 
-Manual path (equivalent to the above):
+Manual path:
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -194,6 +337,12 @@ uv venv .venv --python 3.11
 source .venv/bin/activate
 uv pip install -e ".[all,dev]"
 scripts/run_tests.sh
+```
+
+**Cyber-specific tests** (no network, no root needed):
+
+```bash
+python -m pytest tests/cyber/ -v
 ```
 
 ---
@@ -212,4 +361,4 @@ scripts/run_tests.sh
 
 MIT — see [LICENSE](LICENSE).
 
-Built by [Nous Research](https://nousresearch.com).
+Base agent built by [Nous Research](https://nousresearch.com). AgentCyber fork by [breakingcircuits1337](https://github.com/breakingcircuits1337).
