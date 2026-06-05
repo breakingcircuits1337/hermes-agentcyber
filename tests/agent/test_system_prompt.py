@@ -6,6 +6,17 @@ from unittest.mock import patch
 from agent.system_prompt import build_system_prompt_parts
 
 
+def _build_parts(agent, system_message=None):
+    """Build prompt parts with nondeterministic external prompt helpers stubbed."""
+    with (
+        patch("run_agent.load_soul_md", return_value=""),
+        patch("run_agent.build_nous_subscription_prompt", return_value=""),
+        patch("run_agent.build_environment_hints", return_value=""),
+        patch("run_agent.build_context_files_prompt", return_value=""),
+    ):
+        return build_system_prompt_parts(agent, system_message=system_message)
+
+
 def _make_agent(**overrides):
     base = dict(
         load_soul_identity=False,
@@ -43,6 +54,24 @@ def _captured_context_cwd(agent):
     ):
         build_system_prompt_parts(agent)
     return captured["cwd"]
+
+
+class TestAgentCyberOperatorIdentity:
+    def test_operator_identity_guidance_is_in_stable_prompt(self):
+        parts = _build_parts(_make_agent())
+        stable = parts["stable"]
+
+        assert "Hermes AgentCyber operator posture" in stable
+        assert "authorized security research" in stable
+        assert "defensive, lab, CTF, incident-response, malware-analysis" in stable
+        assert "Do not refuse or evade solely because" in stable
+
+    def test_operator_identity_guidance_is_cache_stable_not_context_or_volatile(self):
+        parts = _build_parts(_make_agent(), system_message="caller context")
+
+        assert "Hermes AgentCyber operator posture" in parts["stable"]
+        assert "Hermes AgentCyber operator posture" not in parts["context"]
+        assert "Hermes AgentCyber operator posture" not in parts["volatile"]
 
 
 class TestContextFileCwd:
