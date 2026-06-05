@@ -33,7 +33,15 @@ import time
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+
+def _running_as_root() -> bool:
+    """Return True when the current platform exposes geteuid and UID is root."""
+    return hasattr(os, "geteuid") and os.geteuid() == 0
+
 
 logger = logging.getLogger(__name__)
 
@@ -355,7 +363,7 @@ def _action_status(args: dict, store: _ScanStore) -> dict:
     return {
         "nmap_available": _nmap_available(),
         "nmap_path":      shutil.which("nmap") or "not found",
-        "running_as_root": os.geteuid() == 0,
+        "running_as_root": _running_as_root(),
         "note_on_root": (
             "SYN scan (-sS), OS detection (-O), and 'vuln' profile require root. "
             "TCP connect scan (-sT) works without root."

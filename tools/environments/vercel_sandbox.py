@@ -11,6 +11,7 @@ from __future__ import annotations
 from functools import cache
 from dataclasses import dataclass
 from datetime import timedelta
+import importlib
 import logging
 import math
 import os
@@ -47,12 +48,20 @@ _DEFAULT_CONTAINER_DISK_MB = 51200
 def _ensure_vercel_sdk() -> None:
     """Lazy-install vercel SDK on demand. Idempotent."""
     try:
+        importlib.import_module("vercel.sandbox")
+        return
+    except ImportError:
+        pass
+
+    try:
         from tools.lazy_deps import ensure as _lazy_ensure
         _lazy_ensure("terminal.vercel", prompt=False)
     except ImportError:
         pass
     except Exception as e:
         raise ImportError(str(e))
+
+    importlib.import_module("vercel.sandbox")
 
 
 _CREATE_RETRY_ATTEMPTS = 3

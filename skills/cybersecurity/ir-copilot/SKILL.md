@@ -1,3 +1,12 @@
+---
+name: ir-copilot
+description: Structured incident response copilot workflow for triage, containment, recovery, and reporting.
+version: 1.0.0
+metadata:
+  hermes:
+    tags: [cybersecurity, incident-response, soc, playbook]
+---
+
 # Incident Response Co-pilot
 
 Guides an analyst through a structured IR lifecycle using the `ir_incident` playbook tool, from initial detection through containment to post-incident report.

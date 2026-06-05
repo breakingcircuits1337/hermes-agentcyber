@@ -1,3 +1,12 @@
+---
+name: vuln-triage
+description: Prioritize CVE backlogs by correlating severity, exploit probability, and asset context.
+version: 1.0.0
+metadata:
+  hermes:
+    tags: [cybersecurity, vulnerability-management, cve, triage]
+---
+
 # Vulnerability Triage
 
 Rapidly prioritises a CVE backlog by correlating CVSS severity, EPSS exploitation probability, and your asset inventory — all from free public APIs.

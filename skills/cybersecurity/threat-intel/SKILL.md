@@ -1,3 +1,12 @@
+---
+name: threat-intel
+description: Enrich IOCs and CVEs into concise, actionable threat intelligence briefs using Cyber Edition tools.
+version: 1.0.0
+metadata:
+  hermes:
+    tags: [cybersecurity, threat-intelligence, ioc, cve]
+---
+
 # Threat Intelligence Synthesis
 
 Enriches raw indicators and CVEs into a concise, actionable intelligence brief using the built-in cyber tools.
