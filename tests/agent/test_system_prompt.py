@@ -101,6 +101,26 @@ class TestAgentCyberOperatorIdentity:
         ):
             assert keyword in stable
 
+    def test_credential_handling_and_channel_policy_are_in_stable_prompt(self):
+        parts = _build_parts(_make_agent())
+        stable = parts["stable"]
+
+        assert "AgentCyber credential handling and channel awareness" in stable
+        for expected in (
+            "allow retrieval and use of stored credentials from approved sources",
+            "Prefer using secrets directly over displaying them",
+            "do not flatly refuse",
+            "Local CLI: allow display or use",
+            "Discord or mobile: warn once that the channel is riskier",
+            "Never rotate, delete, redact, overwrite, or secure credentials",
+            "Do not print secrets unnecessarily in summaries, logs, or final responses",
+        ):
+            assert expected in stable
+
+        assert "AgentCyber credential handling and channel awareness" not in parts["context"]
+        assert "AgentCyber credential handling and channel awareness" not in parts["volatile"]
+        assert "Never expose secrets, enable credential theft" not in stable
+
 
 class TestContextFileCwd:
     def test_none_when_terminal_cwd_unset(self, monkeypatch):

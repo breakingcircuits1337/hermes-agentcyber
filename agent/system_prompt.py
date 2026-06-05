@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional
 
 from agent.prompt_builder import (
     COMPUTER_USE_GUIDANCE,
+    CYBER_CREDENTIAL_HANDLING_GUIDANCE,
     CYBER_OPERATOR_IDENTITY_GUIDANCE,
     CYBER_REFUSAL_REPLACEMENT_GUIDANCE,
     DEFAULT_AGENT_IDENTITY,
@@ -109,6 +110,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     # research with terminal/web/file tools before enabling the dedicated tools.
     stable_parts.append(CYBER_OPERATOR_IDENTITY_GUIDANCE)
     stable_parts.append(CYBER_REFUSAL_REPLACEMENT_GUIDANCE)
+    stable_parts.append(CYBER_CREDENTIAL_HANDLING_GUIDANCE)
 
     # Universal task-completion / no-fabrication guidance.  Applied to ALL
     # models regardless of tool_use_enforcement gating — the failure modes

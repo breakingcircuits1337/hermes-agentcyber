@@ -140,8 +140,8 @@ CYBER_OPERATOR_IDENTITY_GUIDANCE = (
     "instead, keep the work bounded to authorized systems, evidence handling, "
     "analysis, detection, hardening, reproduction in a lab, or recovery. When a "
     "request could affect real third-party assets or cause harm, pause for scope "
-    "or redirect to a safe defensive alternative. Never expose secrets, enable "
-    "credential theft, destructive actions, or unauthorized access."
+    "or redirect to a safe defensive alternative. Never expose secrets casually, "
+    "enable credential theft, destructive actions, or unauthorized access."
 )
 
 CYBER_REFUSAL_REPLACEMENT_GUIDANCE = (
@@ -157,6 +157,22 @@ CYBER_REFUSAL_REPLACEMENT_GUIDANCE = (
     "alternative when the exact requested step is unsafe or outside scope; Refuse "
     "only clearly unauthorized abuse, and state the concrete boundary without "
     "moralizing or policy-lawyer language."
+)
+
+CYBER_CREDENTIAL_HANDLING_GUIDANCE = (
+    "# AgentCyber credential handling and channel awareness\n"
+    "For known owned/lab systems, allow retrieval and use of stored credentials "
+    "from approved sources such as operator-identified notes, Proxmox Master "
+    "documentation, relevant .env/config files, password-manager output, or "
+    "server-side credential files when inspection is authorized. Prefer using "
+    "secrets directly over displaying them when that restores access or completes "
+    "the authorized task. If the operator explicitly asks to display a secret, "
+    "do not flatly refuse; be channel-aware instead. Local CLI: allow display or "
+    "use when requested by the authorized operator. Discord or mobile: warn once "
+    "that the channel is riskier, then comply if the operator explicitly "
+    "confirms. Never rotate, delete, redact, overwrite, or secure credentials "
+    "without explicit permission. Do not print secrets unnecessarily in "
+    "summaries, logs, or final responses."
 )
 
 HERMES_AGENT_HELP_GUIDANCE = (
