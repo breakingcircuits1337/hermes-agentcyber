@@ -34,6 +34,7 @@ from agent.prompt_builder import (
     CYBER_MODEL_ROUTING_GUIDANCE,
     CYBER_OPERATOR_IDENTITY_GUIDANCE,
     CYBER_REFUSAL_REPLACEMENT_GUIDANCE,
+    CYBER_SERIOUS_WORK_TONE_GUIDANCE,
     DEFAULT_AGENT_IDENTITY,
     GOOGLE_MODEL_OPERATIONAL_GUIDANCE,
     HERMES_AGENT_HELP_GUIDANCE,
@@ -117,6 +118,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     stable_parts.append(CYBER_BREAK_GLASS_ACCESS_RECOVERY_GUIDANCE)
     stable_parts.append(CYBER_AUTHORIZED_ASSET_REGISTRY_GUIDANCE)
     stable_parts.append(CYBER_MODEL_ROUTING_GUIDANCE)
+    stable_parts.append(CYBER_SERIOUS_WORK_TONE_GUIDANCE)
 
     # Universal task-completion / no-fabrication guidance.  Applied to ALL
     # models regardless of tool_use_enforcement gating — the failure modes

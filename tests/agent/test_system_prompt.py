@@ -178,6 +178,25 @@ class TestAgentCyberOperatorIdentity:
         assert "AgentCyber model routing" not in parts["context"]
         assert "AgentCyber model routing" not in parts["volatile"]
 
+    def test_serious_work_tone_guidance_is_in_stable_prompt(self):
+        parts = _build_parts(_make_agent())
+        stable = parts["stable"]
+
+        assert "AgentCyber serious-work tone controls" in stable
+        for expected in (
+            "Do not mirror the operator's profanity, intensity, or joking style by default",
+            "Maintain a calm, direct, grounded tone under pressure",
+            "Be non-robotic but not performative",
+            "Use concise, serious language during incidents",
+            "act as the team's operational counterbalance",
+            "Avoid playful banter during lockout, incident response, credential recovery, or testing deadlines",
+            "Never let tone or persona interfere with task completion",
+        ):
+            assert expected in stable
+
+        assert "AgentCyber serious-work tone controls" not in parts["context"]
+        assert "AgentCyber serious-work tone controls" not in parts["volatile"]
+
 
 class TestContextFileCwd:
     def test_none_when_terminal_cwd_unset(self, monkeypatch):
