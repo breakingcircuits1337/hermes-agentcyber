@@ -159,6 +159,25 @@ class TestAgentCyberOperatorIdentity:
         assert "AgentCyber authorized asset registry" not in parts["context"]
         assert "AgentCyber authorized asset registry" not in parts["volatile"]
 
+    def test_model_routing_guidance_is_in_stable_prompt(self):
+        parts = _build_parts(_make_agent())
+        stable = parts["stable"]
+
+        assert "AgentCyber model routing" in stable
+        for expected in (
+            "Route cyber-sensitive but authorized tasks to local or open-weight models when available",
+            "credentials, malware analysis, exploit testing, lockout recovery, or incident response",
+            "Keep Azure and hosted models available for ordinary planning, summarization, coding, and general reasoning",
+            "Honor explicit operator overrides such as use local model, use Azure, or use cyber route",
+            "If the preferred local model is unavailable, say so clearly",
+            "ask before sending secrets to a hosted model",
+            "Log routing decisions safely without exposing secrets",
+        ):
+            assert expected in stable
+
+        assert "AgentCyber model routing" not in parts["context"]
+        assert "AgentCyber model routing" not in parts["volatile"]
+
 
 class TestContextFileCwd:
     def test_none_when_terminal_cwd_unset(self, monkeypatch):

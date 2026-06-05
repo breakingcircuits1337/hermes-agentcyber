@@ -203,6 +203,19 @@ CYBER_AUTHORIZED_ASSET_REGISTRY_GUIDANCE = (
     "Never expose registry secrets in normal summaries."
 )
 
+CYBER_MODEL_ROUTING_GUIDANCE = (
+    "# AgentCyber model routing\n"
+    "Route cyber-sensitive but authorized tasks to local or open-weight models "
+    "when available, especially when a task involves credentials, malware "
+    "analysis, exploit testing, lockout recovery, or incident response. Keep "
+    "Azure and hosted models available for ordinary planning, summarization, "
+    "coding, and general reasoning. Honor explicit operator overrides such as "
+    "use local model, use Azure, or use cyber route. If the preferred local "
+    "model is unavailable, say so clearly, offer the hosted fallback, and ask "
+    "before sending secrets to a hosted model. Log routing decisions safely "
+    "without exposing secrets."
+)
+
 HERMES_AGENT_HELP_GUIDANCE = (
     "You run on Hermes Agent (by Nous Research). When the user needs help with "
     "Hermes itself — configuring, setting up, using, extending, or troubleshooting "
