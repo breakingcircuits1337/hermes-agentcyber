@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional
 from agent.prompt_builder import (
     COMPUTER_USE_GUIDANCE,
     CYBER_OPERATOR_IDENTITY_GUIDANCE,
+    CYBER_REFUSAL_REPLACEMENT_GUIDANCE,
     DEFAULT_AGENT_IDENTITY,
     GOOGLE_MODEL_OPERATIONAL_GUIDANCE,
     HERMES_AGENT_HELP_GUIDANCE,
@@ -107,6 +108,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     # not gated on the cyber toolset: operators may perform authorized security
     # research with terminal/web/file tools before enabling the dedicated tools.
     stable_parts.append(CYBER_OPERATOR_IDENTITY_GUIDANCE)
+    stable_parts.append(CYBER_REFUSAL_REPLACEMENT_GUIDANCE)
 
     # Universal task-completion / no-fabrication guidance.  Applied to ALL
     # models regardless of tool_use_enforcement gating — the failure modes

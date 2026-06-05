@@ -73,6 +73,34 @@ class TestAgentCyberOperatorIdentity:
         assert "Hermes AgentCyber operator posture" not in parts["context"]
         assert "Hermes AgentCyber operator posture" not in parts["volatile"]
 
+    def test_refusal_replacement_ladder_and_cyber_keywords_are_in_stable_prompt(self):
+        parts = _build_parts(_make_agent())
+        stable = parts["stable"]
+
+        assert "Refusal replacement ladder" in stable
+        for expected in (
+            "Proceed when the task is authorized",
+            "Proceed with containment",
+            "Ask one concise scoping question",
+            "Offer a safe operational alternative",
+            "Refuse only clearly unauthorized abuse",
+        ):
+            assert expected in stable
+
+        for keyword in (
+            "malware",
+            "worm",
+            "C2",
+            "exploit",
+            "payload",
+            "credential",
+            "proxy",
+            "persistence",
+            "fingerprinting",
+            "evasion",
+        ):
+            assert keyword in stable
+
 
 class TestContextFileCwd:
     def test_none_when_terminal_cwd_unset(self, monkeypatch):
