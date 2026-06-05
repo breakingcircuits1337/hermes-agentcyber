@@ -1,11 +1,29 @@
 ---
-name: vuln-triage
-description: Prioritize CVE backlogs by correlating severity, exploit probability, and asset context.
-version: 1.0.0
-metadata:
-  hermes:
-    tags: [cybersecurity, vulnerability-management, cve, triage]
+title: "Vuln Triage — Prioritize CVE backlogs by correlating severity, exploit probability, and asset context"
+sidebar_label: "Vuln Triage"
+description: "Prioritize CVE backlogs by correlating severity, exploit probability, and asset context"
 ---
+
+{/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
+
+# Vuln Triage
+
+Prioritize CVE backlogs by correlating severity, exploit probability, and asset context.
+
+## Skill metadata
+
+| | |
+|---|---|
+| Source | Bundled (installed by default) |
+| Path | `skills/cybersecurity/vuln-triage` |
+| Version | `1.0.0` |
+| Tags | `cybersecurity`, `vulnerability-management`, `cve`, `triage` |
+
+## Reference: full SKILL.md
+
+:::info
+The following is the complete skill definition that Hermes loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+:::
 
 # Vulnerability Triage
 
@@ -64,4 +82,4 @@ EPSS (Exploit Prediction Scoring System) is sourced from first.org and updated d
 
 - NVD API is rate-limited at ~5 requests / 30 seconds. For bulk jobs, add a short delay between subagent calls or batch them in groups of 5.
 - Asset matching is keyword-based (CPE vendor/product against your asset string). Verify matches manually for high-stakes decisions.
-- EPSS scores are not available for very new CVEs (< 24 h since NVD publication). The tool will note when the score is unavailable.
+- EPSS scores are not available for very new CVEs (&lt; 24 h since NVD publication). The tool will note when the score is unavailable.

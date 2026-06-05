@@ -1242,9 +1242,11 @@ def _workspace_root(dir: Path) -> Path:
 
     In a workspace checkout the single ``package-lock.json`` and hoisted
     ``node_modules/`` live at the workspace root (the parent of the
-    sub-package directory).  Heuristic: if *dir* has a ``package.json``
-    but **no** ``package-lock.json``, and its **parent** has a
-    ``package-lock.json``, the parent is the workspace root.
+    sub-package directory).  If *dir* is one of this checkout's declared
+    npm workspaces, prefer ``PROJECT_ROOT`` even when a downstream fork
+    preserves historical per-workspace lockfiles.  Otherwise, heuristic:
+    if *dir* has a ``package.json`` but **no** ``package-lock.json``, and
+    its **parent** has a ``package-lock.json``, the parent is the workspace root.
     Otherwise *dir* itself is the root (standalone project or
     prebuilt-bundle layout).
 
@@ -1255,6 +1257,18 @@ def _workspace_root(dir: Path) -> Path:
     sub-package lockfile (e.g. running ``npm install`` in the wrong
     directory).
     """
+    try:
+        rel = dir.resolve().relative_to(PROJECT_ROOT)
+    except ValueError:
+        rel = None
+    if rel is not None and (PROJECT_ROOT / "package-lock.json").is_file():
+        parts = rel.parts
+        if (
+            rel in {Path("ui-tui"), Path("web")}
+            or (len(parts) == 2 and parts[0] == "apps")
+            or (len(parts) == 3 and parts[:2] == ("ui-tui", "packages"))
+        ):
+            return PROJECT_ROOT
     if (
         (dir / "package.json").is_file()
         and not (dir / "package-lock.json").is_file()

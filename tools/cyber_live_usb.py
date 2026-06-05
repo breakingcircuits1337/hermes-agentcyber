@@ -34,6 +34,11 @@ logger = logging.getLogger(__name__)
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "live-usb"
 
 
+def _running_as_root() -> bool:
+    """Return True when the current platform exposes geteuid and UID is root."""
+    return hasattr(os, "geteuid") and os.geteuid() == 0
+
+
 def _script(name: str) -> str:
     """Return absolute path to a live-usb/ script, verified to exist."""
     path = _SCRIPTS_DIR / name
@@ -139,7 +144,7 @@ def _status(args: dict = None, **_kw: Any) -> dict:
 
 def _build(args: dict, **_kw: Any) -> dict:
     """Trigger the ISO build. Requires root and build deps on the host."""
-    if os.geteuid() != 0:
+    if not _running_as_root():
         return {
             "error": "Building an ISO requires root.",
             "hint":  "Run the agent as root, or run the build script directly: "
@@ -178,7 +183,7 @@ def _build(args: dict, **_kw: Any) -> dict:
 
 def _write(args: dict, **_kw: Any) -> dict:
     """Write an ISO to a USB drive. Requires root."""
-    if os.geteuid() != 0:
+    if not _running_as_root():
         return {
             "error": "Writing to a block device requires root.",
             "hint":  "Run: sudo live-usb/write_usb.sh --iso <path> --device <dev> --yes",
@@ -212,7 +217,7 @@ def _write(args: dict, **_kw: Any) -> dict:
 
 def _provision(args: dict, **_kw: Any) -> dict:
     """Inject config into an already-written USB."""
-    if os.geteuid() != 0:
+    if not _running_as_root():
         return {"error": "Provisioning requires root (needs to mount the USB partition)."}
 
     device = args.get("device", "")

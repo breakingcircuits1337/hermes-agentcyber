@@ -1,11 +1,29 @@
 ---
-name: threat-intel
-description: Enrich IOCs and CVEs into concise, actionable threat intelligence briefs using Cyber Edition tools.
-version: 1.0.0
-metadata:
-  hermes:
-    tags: [cybersecurity, threat-intelligence, ioc, cve]
+title: "Threat Intel — Enrich IOCs and CVEs into concise, actionable threat intelligence briefs using Cyber Edition tools"
+sidebar_label: "Threat Intel"
+description: "Enrich IOCs and CVEs into concise, actionable threat intelligence briefs using Cyber Edition tools"
 ---
+
+{/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
+
+# Threat Intel
+
+Enrich IOCs and CVEs into concise, actionable threat intelligence briefs using Cyber Edition tools.
+
+## Skill metadata
+
+| | |
+|---|---|
+| Source | Bundled (installed by default) |
+| Path | `skills/cybersecurity/threat-intel` |
+| Version | `1.0.0` |
+| Tags | `cybersecurity`, `threat-intelligence`, `ioc`, `cve` |
+
+## Reference: full SKILL.md
+
+:::info
+The following is the complete skill definition that Hermes loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+:::
 
 # Threat Intelligence Synthesis
 
