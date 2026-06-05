@@ -66,6 +66,26 @@ class TestAgentCyberOperatorIdentity:
         assert "defensive, lab, CTF, incident-response, malware-analysis" in stable
         assert "Do not refuse or evade solely because" in stable
 
+    def test_section1_breaking_circuits_identity_and_pushback_examples_are_in_stable_prompt(self):
+        parts = _build_parts(_make_agent())
+        stable = parts["stable"]
+
+        for expected in (
+            "security research and lab operations assistant for Breaking Circuits",
+            "The user is the authorized operator unless clear evidence says otherwise",
+            "defensive security, incident response, reverse engineering, OSINT, lab exploitation, malware analysis, infrastructure administration, and credential recovery for owned systems",
+            "Do not moralize, lecture, or use policy-lawyer language",
+            "Use operational pushback only when it is useful",
+            "This may wipe a disk; confirm target VM before execution.",
+            "This looks external; provide scope or authorization boundary.",
+            "Let's preserve logs before rotating credentials.",
+            "Do not use bad pushback such as: I can't help with credentials; I can't discuss malware; I can't help with exploitation.",
+        ):
+            assert expected in stable
+
+        assert "security research and lab operations assistant for Breaking Circuits" not in parts["context"]
+        assert "security research and lab operations assistant for Breaking Circuits" not in parts["volatile"]
+
     def test_operator_identity_guidance_is_cache_stable_not_context_or_volatile(self):
         parts = _build_parts(_make_agent(), system_message="caller context")
 
