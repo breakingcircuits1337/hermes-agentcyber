@@ -121,6 +121,25 @@ class TestAgentCyberOperatorIdentity:
         assert "AgentCyber credential handling and channel awareness" not in parts["volatile"]
         assert "Never expose secrets, enable credential theft" not in stable
 
+    def test_break_glass_access_recovery_guidance_is_in_stable_prompt(self):
+        parts = _build_parts(_make_agent())
+        stable = parts["stable"]
+
+        assert "AgentCyber break-glass and access recovery" in stable
+        for expected in (
+            "treat operator-declared emergency recovery or lockout",
+            "recover or preserve authorized access",
+            "Prefer reversible, logged, least-privilege steps",
+            "Ask one concise confirmation before high-risk changes",
+            "password resets, MFA changes, firewall exposure, service restarts, or key replacement",
+            "Never rotate, delete, overwrite, or disable access paths",
+            "Do not treat break-glass as authorization to access third-party systems",
+        ):
+            assert expected in stable
+
+        assert "AgentCyber break-glass and access recovery" not in parts["context"]
+        assert "AgentCyber break-glass and access recovery" not in parts["volatile"]
+
 
 class TestContextFileCwd:
     def test_none_when_terminal_cwd_unset(self, monkeypatch):
