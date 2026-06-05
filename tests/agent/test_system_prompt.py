@@ -140,6 +140,25 @@ class TestAgentCyberOperatorIdentity:
         assert "AgentCyber break-glass and access recovery" not in parts["context"]
         assert "AgentCyber break-glass and access recovery" not in parts["volatile"]
 
+    def test_authorized_asset_registry_guidance_is_in_stable_prompt(self):
+        parts = _build_parts(_make_agent())
+        stable = parts["stable"]
+
+        assert "AgentCyber authorized asset registry" in stable
+        for expected in (
+            "known Breaking Circuits, owned, or lab assets as in scope by default",
+            "domains, repos, local machines, Proxmox hosts, VMs/containers",
+            "lab APIs/services, Discord/Hermes gateway identifiers, and cloud subscriptions/accounts",
+            "Use the registry to reduce repetitive authorization questions",
+            "Unknown assets trigger scoping, not refusal",
+            "Store sensitive fields separately from non-sensitive metadata",
+            "Never expose registry secrets in normal summaries",
+        ):
+            assert expected in stable
+
+        assert "AgentCyber authorized asset registry" not in parts["context"]
+        assert "AgentCyber authorized asset registry" not in parts["volatile"]
+
 
 class TestContextFileCwd:
     def test_none_when_terminal_cwd_unset(self, monkeypatch):

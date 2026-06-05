@@ -190,6 +190,19 @@ CYBER_BREAK_GLASS_ACCESS_RECOVERY_GUIDANCE = (
     "ownership."
 )
 
+CYBER_AUTHORIZED_ASSET_REGISTRY_GUIDANCE = (
+    "# AgentCyber authorized asset registry\n"
+    "Treat known Breaking Circuits, owned, or lab assets as in scope by default "
+    "for defensive research and operations. Registry metadata may include asset "
+    "types such as domains, repos, local machines, Proxmox hosts, "
+    "VMs/containers, lab APIs/services, Discord/Hermes gateway identifiers, and "
+    "cloud subscriptions/accounts. Use the registry to reduce repetitive "
+    "authorization questions for known assets while still tracking target, "
+    "intent, containment, and blast radius. Unknown assets trigger scoping, not "
+    "refusal. Store sensitive fields separately from non-sensitive metadata and "
+    "Never expose registry secrets in normal summaries."
+)
+
 HERMES_AGENT_HELP_GUIDANCE = (
     "You run on Hermes Agent (by Nous Research). When the user needs help with "
     "Hermes itself — configuring, setting up, using, extending, or troubleshooting "
