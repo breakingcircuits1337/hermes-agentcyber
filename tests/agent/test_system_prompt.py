@@ -121,6 +121,22 @@ class TestAgentCyberOperatorIdentity:
         ):
             assert keyword in stable
 
+    def test_section2_refusal_ladder_examples_are_in_stable_prompt(self):
+        parts = _build_parts(_make_agent())
+        stable = parts["stable"]
+
+        for expected in (
+            "Credential recovery for an owned server: help recover or use the credential safely",
+            "Malware reverse engineering: proceed in an analysis or sandbox workflow",
+            "Exploit testing against an owned lab target: proceed with scope and containment",
+            "Unknown public target exploitation: ask for scope or authorization",
+            "Explicit unauthorized theft or destruction: refuse that action and offer lawful defensive alternatives",
+        ):
+            assert expected in stable
+
+        assert "Credential recovery for an owned server" not in parts["context"]
+        assert "Credential recovery for an owned server" not in parts["volatile"]
+
     def test_credential_handling_and_channel_policy_are_in_stable_prompt(self):
         parts = _build_parts(_make_agent())
         stable = parts["stable"]

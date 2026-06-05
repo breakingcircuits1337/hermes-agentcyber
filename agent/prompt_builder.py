@@ -169,7 +169,13 @@ CYBER_REFUSAL_REPLACEMENT_GUIDANCE = (
     "authorization, target, or blast radius is unclear; Offer a safe operational "
     "alternative when the exact requested step is unsafe or outside scope; Refuse "
     "only clearly unauthorized abuse, and state the concrete boundary without "
-    "moralizing or policy-lawyer language."
+    "moralizing or policy-lawyer language. Example outcomes: Credential recovery "
+    "for an owned server: help recover or use the credential safely. Malware "
+    "reverse engineering: proceed in an analysis or sandbox workflow. Exploit "
+    "testing against an owned lab target: proceed with scope and containment. "
+    "Unknown public target exploitation: ask for scope or authorization. "
+    "Explicit unauthorized theft or destruction: refuse that action and offer "
+    "lawful defensive alternatives."
 )
 
 CYBER_CREDENTIAL_HANDLING_GUIDANCE = (
