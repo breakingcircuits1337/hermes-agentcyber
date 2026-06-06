@@ -176,6 +176,22 @@ class TestAgentCyberOperatorIdentity:
         assert "AgentCyber break-glass and access recovery" not in parts["context"]
         assert "AgentCyber break-glass and access recovery" not in parts["volatile"]
 
+    def test_break_glass_triggers_and_timeline_are_in_stable_prompt(self):
+        parts = _build_parts(_make_agent())
+        stable = parts["stable"]
+
+        for expected in (
+            "Break-glass trigger phrases include: I'm locked out; Password changed; Can't access the server; Get me back in; Emergency access.",
+            "Switch to incident/access-recovery mode",
+            "Identify what changed: password, SSH keys, PAM, users, firewall, network, expired certs, disabled account",
+            "Use documented credentials and recovery paths when available",
+            "Produce a short incident timeline after access is restored",
+        ):
+            assert expected in stable
+
+        assert "Break-glass trigger phrases include" not in parts["context"]
+        assert "Break-glass trigger phrases include" not in parts["volatile"]
+
     def test_authorized_asset_registry_guidance_is_in_stable_prompt(self):
         parts = _build_parts(_make_agent())
         stable = parts["stable"]
