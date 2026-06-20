@@ -48,6 +48,7 @@ AUTHOR_MAP = {
     "charles@salesondemand.io": "salesondemandio",
     "victor@rocketfueldev.com": "victor-kyriazakos",
     "87440198+JoaoMarcos44@users.noreply.github.com": "JoaoMarcos44",
+    "joaomarcosdias444@gmail.com": "JoaoMarcos44",
     "286497132+srojk34@users.noreply.github.com": "srojk34",
     "59806492+sitkarev@users.noreply.github.com": "sitkarev",
     "zheng@omegasys.eu": "omegazheng",
@@ -106,6 +107,7 @@ AUTHOR_MAP = {
     "290859878+synapsesx@users.noreply.github.com": "synapsesx",
     "157689911+itsflownium@users.noreply.github.com": "itsflownium",
     "dirtyren@users.noreply.github.com": "dirtyren",
+    "275304381+hakanpak@users.noreply.github.com": "hakanpak",
     "ludo.galabru@solana.org": "lgalabru",
     "johnjacobkenny@users.noreply.github.com": "johnjacobkenny",
     "chanyoung.kim@nota.ai": "channkim",
@@ -406,6 +408,7 @@ AUTHOR_MAP = {
     "kiranvk2011@gmail.com": "kiranvk-2011",  # PR #24815 salvage (image documents → vision)
     "kosmonaut-t@centrum.cz": "rak135",  # PR #25960 salvage (Windows /restart)
     "bot.chi.online@gmail.com": "B0Tch1",  # PR #27634 salvage (disable_topic_auto_rename)
+    "daniel.laforce@argobox.com": "KeyArgo",  # upstream sync attribution (active-agent ref wiring)
     "1037461232@qq.com": "jackjin1997",  # PR #27239 salvage (restore DM topic thread_id after split)
     "soynchuux@gmail.com": "soynchux",  # PR #27806 salvage (chat-scoped auth without user_id)
     "psikonetik@gmail.com": "el-analista",  # PR #25368 salvage (cron topic fallback report)
