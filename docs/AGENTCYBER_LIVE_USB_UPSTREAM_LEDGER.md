@@ -301,3 +301,50 @@ Finish/verify the AgentCyber Live USB feature and keep the fork synchronized wit
 
 - Open/review/merge the guarded sync branch into AgentCyber main only after human approval; do not force-push.
 - Future runs should re-check upstream drift, focused Live USB tests, toolset/status visibility, and this ledger before taking a new implementation lane.
+
+### 2026-06-21T21:42:11Z — verify upstream and require exact Live USB approval tokens
+
+**Commands / status**
+
+- `git status --short --branch`: started on `agentcyber/upstream-sync-20260621-194355...origin/agentcyber/upstream-sync-20260621-194355` with a clean worktree.
+- `git fetch upstream main --prune && git fetch origin main --prune && git fetch origin agentcyber/upstream-sync-20260621-194355 --prune`: all fetched cleanly with no upstream advancement this run.
+- Drift after fetch: `HEAD..upstream/main` -> `0`; `upstream/main..HEAD` -> `76`; `HEAD..origin/main` -> `0`; `origin/main..HEAD` -> `214`; `HEAD..origin/agentcyber/upstream-sync-20260621-194355` -> `0`; `origin/agentcyber/upstream-sync-20260621-194355..HEAD` -> `0`.
+- Starting HEAD/local and remote sync branch: `37b190b29`; upstream main: `6f0ecf37d`; origin main: `480559a7e`.
+
+**Changed files**
+
+- `tools/cyber_live_usb.py`: made live USB approval-token comparison exact by removing `.strip()` normalization for both `HERMES_AGENTCYBER_LIVE_USB_APPROVAL` and supplied approval args while preserving `hmac.compare_digest`; blank/missing env or approval values still fail closed.
+- `tests/cyber/test_live_usb_tool.py`: added regression coverage for `build`, `write`, and `provision` proving wrong token, wrong case, leading whitespace, and trailing whitespace all deny before `_script`, `_run`, or block-device checks.
+- `docs/AGENTCYBER_STANDALONE_RUNBOOK.md`: documented that high-consequence live USB approval tokens must match exactly with no whitespace trimming or case normalization.
+- `docs/AGENTCYBER_LIVE_USB_UPSTREAM_LEDGER.md`: added this run entry.
+
+**Verification**
+
+- Implementer subagent initially added wrong-token/wrong-case tests; focused test output before the whitespace hardening: `45 passed in 0.63s`.
+- After exact whitespace hardening: `uv run --frozen python -m pytest tests/cyber/test_live_usb_tool.py -q -o addopts= --tb=short` -> `51 passed in 0.69s`.
+- `uv run --frozen python -m ruff check tools/cyber_live_usb.py tests/cyber/test_live_usb_tool.py` -> `All checks passed!`.
+- `scripts/run_tests.sh tests/cyber/test_live_usb_tool.py tests/hermes_cli/test_agentcyber_cmd.py tests/hermes_cli/test_agentcyber_wrapper.py tests/hermes_cli/test_tools_config.py` -> `161 tests passed, 0 failed`.
+- `scripts/agentcyber status --json` -> `live_usb_visible: true`, `live_usb_enabled: false`, `cyber_enabled: true`, local runtime health `ok: true`, and secret fields reported as booleans/presence only.
+- `scripts/agentcyber hermes tools list` -> `cyber` enabled and `live_usb` disabled.
+- `git diff --check && git diff --cached --check` -> passed with no output.
+- Subagent spec re-review after whitespace exactness: `PASS`.
+- Subagent quality re-review after whitespace exactness: `APPROVED`; no critical, important, or minor issues.
+
+**Blockers / boundaries**
+
+- No upstream drift was present, so no upstream merge was needed this run.
+- No cron jobs were scheduled, created, updated, paused, resumed, or removed.
+- No default `~/.hermes`, default gateway, default cron, or default profiles were modified.
+- No files were deleted.
+- No USB/block-device writes, ISO builds as root, `sudo`, package installs, hardware actions, external security actions, cloud spend, credential access/disclosure, or public disclosure were performed.
+- Status commands contacted only the configured local Ollama health endpoint and printed booleans/status fields, not secrets.
+
+**Commit / push**
+
+- Pre-commit diff stat: `docs/AGENTCYBER_STANDALONE_RUNBOOK.md` (2-line wording update), `tests/cyber/test_live_usb_tool.py` (+51 lines), `tools/cyber_live_usb.py` (exact-comparison cleanup), and this ledger.
+- This entry is intended to be included in the scoped exact-approval commit. After that commit is pushed, record the commit/remote verification in one bounded ledger-only follow-up and stop rather than repeatedly amending the ledger.
+
+**Next lane**
+
+- Open/review/merge the guarded sync branch into AgentCyber main only after human approval; do not force-push.
+- Future runs should re-check upstream drift, focused Live USB tests, toolset/status visibility, and this ledger. If this guarded branch is merged and no new Live USB gaps are found, treat future runs as verification/no-op lanes.

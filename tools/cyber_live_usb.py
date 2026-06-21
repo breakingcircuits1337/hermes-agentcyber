@@ -123,17 +123,17 @@ def _require_operator_approval(args: dict, action: str) -> dict | None:
     enabled. The approval token lives in the operator-controlled AgentCyber
     environment; it is compared without logging or returning the secret.
     """
-    expected = os.getenv(_APPROVAL_ENV_VAR, "").strip()
+    expected = os.getenv(_APPROVAL_ENV_VAR)
     if not expected:
         return _operator_approval_error(action, f"missing {_APPROVAL_ENV_VAR}")
 
-    provided = ""
+    provided = None
     for key in _APPROVAL_ARG_KEYS:
         value = args.get(key)
-        if isinstance(value, str) and value.strip():
-            provided = value.strip()
+        if isinstance(value, str) and value:
+            provided = value
             break
-    if not provided:
+    if provided is None:
         return _operator_approval_error(action, "missing operator_approval")
     if not hmac.compare_digest(provided, expected):
         return _operator_approval_error(action, "operator_approval did not match")

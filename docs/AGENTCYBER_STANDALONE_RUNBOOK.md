@@ -179,7 +179,7 @@ Exact spacing and icons may vary by terminal skin.
 
 AgentCyber `write` and `provision` tool calls also require the target to be verifiably removable via Linux block-device metadata; edge-case media that cannot be verified should be handled manually outside unattended tool control.
 
-For an explicitly approved live USB maintenance session only, the operator can set a token in the standalone AgentCyber environment and provide the same value as `operator_approval` in the `live_usb` tool call:
+For an explicitly approved live USB maintenance session only, the operator can set a token in the standalone AgentCyber environment and provide the same value as `operator_approval` in the `live_usb` tool call. The value must match exactly; AgentCyber does not trim whitespace or normalize case for high-consequence approval tokens:
 
 ```bash
 export HERMES_AGENTCYBER_LIVE_USB_APPROVAL="<operator-approved one-time token>"

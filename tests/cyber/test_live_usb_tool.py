@@ -187,6 +187,57 @@ class TestLiveUsbTool:
         assert "operator approval" in out["error"]
         assert called["is_block_device"] is False
 
+    @pytest.mark.parametrize(
+        ("action", "payload"),
+        [
+            ("build", {"action": "build"}),
+            ("write", {"action": "write", "device": "/dev/sdz", "iso": "/tmp/hermes.iso"}),
+            ("provision", {"action": "provision", "device": "/dev/sdz"}),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "operator_approval",
+        [
+            "wrong-live-usb-lane",
+            "APPROVED-LIVE-USB-LANE",
+            " approved-live-usb-lane",
+            "approved-live-usb-lane ",
+        ],
+    )
+    def test_destructive_actions_reject_non_exact_operator_approval_before_side_effects(
+        self,
+        action: str,
+        payload: dict[str, object],
+        operator_approval: str,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        called = {"is_block_device": False}
+
+        def fake_is_block_device(_path) -> bool:  # noqa: ANN001
+            called["is_block_device"] = True
+            pytest.fail(f"{action} must fail approval before checking block devices")
+
+        monkeypatch.setenv("HERMES_AGENTCYBER_LIVE_USB_APPROVAL", "approved-live-usb-lane")
+        monkeypatch.setattr(live_usb, "_running_as_root", lambda: True)
+        monkeypatch.setattr(live_usb.Path, "is_block_device", fake_is_block_device)
+        monkeypatch.setattr(
+            live_usb,
+            "_script",
+            lambda *_args, **_kw: pytest.fail(f"{action} must fail approval before resolving scripts"),
+        )
+        monkeypatch.setattr(
+            live_usb,
+            "_run",
+            lambda *_args, **_kw: pytest.fail(f"{action} must fail approval before running scripts"),
+        )
+
+        out = json.loads(_handle({**payload, "operator_approval": operator_approval}))
+
+        assert out["approved"] is False
+        assert out["reason"] == "operator_approval did not match"
+        assert out["error"] == f"{action} requires explicit operator approval."
+        assert called["is_block_device"] is False
+
     def test_provision_approved_non_block_device_returns_error_before_run(
         self,
         monkeypatch: pytest.MonkeyPatch,
