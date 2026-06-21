@@ -6,9 +6,13 @@ the scripts in live-usb/ so the logic stays in bash (easier to audit and
 modify without restarting the agent).
 
 Actions:
-  build       — Build a bootable ISO (requires root + debootstrap on host)
-  write       — Write an ISO to a USB drive (requires root)
-  provision   — Inject config into an already-written USB
+  build       — Build a bootable ISO (requires root, exact operator approval,
+                and debootstrap on host)
+  write       — Write an ISO to a USB drive (requires root, exact operator
+                approval, and verified removable Linux block-device metadata)
+  provision   — Inject config into an already-written USB (requires root,
+                exact operator approval, and verified removable Linux
+                block-device metadata)
   list_usb    — List removable block devices (safe, no root needed)
   status      — Show ISO build status / available ISOs
 
@@ -111,6 +115,21 @@ def _operator_approval_error(action: str, reason: str) -> dict:
             "and pass the matching value as operator_approval for this exact "
             "operator-approved live USB operation. status and list_usb do not "
             "require approval. Never print the approval value."
+        ),
+    }
+
+
+def _root_and_approval_required_error(action: str, detail: str) -> dict:
+    """Return a high-consequence root gate error that does not imply sudo is enough."""
+    return {
+        "error": f"{action} requires root plus exact operator approval.",
+        "reason": detail,
+        "approved": False,
+        "hint": (
+            "Root alone is not sufficient for AgentCyber live USB build/write/provision "
+            f"actions. Run only in an operator-approved maintenance session with {_APPROVAL_ENV_VAR} "
+            "set and the matching operator_approval value supplied; status and list_usb remain "
+            "the safe read-only actions."
         ),
     }
 
@@ -259,13 +278,9 @@ def _status(args: dict = None, **_kw: Any) -> dict:
 
 
 def _build(args: dict, **_kw: Any) -> dict:
-    """Trigger the ISO build. Requires root and build deps on the host."""
+    """Trigger the ISO build. Requires root, exact approval, and build deps on the host."""
     if not _running_as_root():
-        return {
-            "error": "Building an ISO requires root.",
-            "hint":  "Run the agent as root, or run the build script directly: "
-                     "sudo live-usb/build_iso.sh",
-        }
+        return _root_and_approval_required_error("build", "building an ISO requires root")
 
     approval_error = _require_operator_approval(args, "build")
     if approval_error:
@@ -302,12 +317,9 @@ def _build(args: dict, **_kw: Any) -> dict:
 
 
 def _write(args: dict, **_kw: Any) -> dict:
-    """Write an ISO to a USB drive. Requires root."""
+    """Write an ISO to a USB drive. Requires root, exact approval, and removable media."""
     if not _running_as_root():
-        return {
-            "error": "Writing to a block device requires root.",
-            "hint":  "Run: sudo live-usb/write_usb.sh --iso <path> --device <dev> --yes",
-        }
+        return _root_and_approval_required_error("write", "writing to a block device requires root")
 
     approval_error = _require_operator_approval(args, "write")
     if approval_error:
@@ -343,9 +355,12 @@ def _write(args: dict, **_kw: Any) -> dict:
 
 
 def _provision(args: dict, **_kw: Any) -> dict:
-    """Inject config into an already-written USB."""
+    """Inject config into an already-written USB. Requires root and exact approval."""
     if not _running_as_root():
-        return {"error": "Provisioning requires root (needs to mount the USB partition)."}
+        return _root_and_approval_required_error(
+            "provision",
+            "provisioning requires root to mount the USB partition",
+        )
 
     approval_error = _require_operator_approval(args, "provision")
     if approval_error:

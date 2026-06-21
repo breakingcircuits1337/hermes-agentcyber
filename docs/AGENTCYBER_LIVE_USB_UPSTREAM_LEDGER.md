@@ -554,3 +554,58 @@ Finish/verify the AgentCyber Live USB feature and keep the fork synchronized wit
 
 - Push this bounded ledger-only follow-up to the guarded sync branch and verify local HEAD equals the remote branch tip.
 - Open/review/merge the guarded sync branch into AgentCyber main only after human approval; do not force-push.
+
+### 2026-06-21T23:19:23Z — verify upstream and fix Live USB non-root guidance
+
+**Commands / status**
+
+- `git status --short --branch && git remote -v && git branch --show-current && git rev-parse --short HEAD && git rev-parse HEAD`: started on `agentcyber/upstream-sync-20260621-194355...origin/agentcyber/upstream-sync-20260621-194355` at `6ace3111194a73a092ddff51b081ac51f64dc49b` with a clean worktree.
+- `git fetch upstream main --prune && git fetch origin main --prune && git fetch origin agentcyber/upstream-sync-20260621-194355 --prune`: all fetched cleanly with no upstream advancement; the combined multi-ref tip-print command ended with `fatal: Needed a single revision`, and individual tip checks were rerun successfully.
+- Drift after fetch: `HEAD..upstream/main` -> `0`; `upstream/main..HEAD` -> `87`; `HEAD..origin/main` -> `0`; `origin/main..HEAD` -> `233`; `HEAD..origin/agentcyber/upstream-sync-20260621-194355` -> `0`; `origin/agentcyber/upstream-sync-20260621-194355..HEAD` -> `0`.
+- Individual tips: `HEAD=6ace31111`; `upstream/main=745c4db23`; `origin/main=480559a7e`; `origin/agentcyber/upstream-sync-20260621-194355=6ace31111`.
+
+**Changed files**
+
+- `tools/cyber_live_usb.py`: updated the module action summary and non-root `build`, `write`, and `provision` responses so AgentCyber tool-call guidance says high-consequence live USB actions require root plus exact operator approval, and explicitly says root alone is not sufficient. Removed the prior sudo-only destructive write hint from the non-root tool response.
+- `tests/cyber/test_live_usb_tool.py`: added a parametrized regression proving non-root `build`, `write`, and `provision` responses mention root plus operator approval/root-alone insufficiency, do not include the old sudo-only write command, and fail before `_script()`, `_run()`, or block-device checks.
+- `docs/AGENTCYBER_LIVE_USB_UPSTREAM_LEDGER.md`: added this run entry.
+
+**Verification**
+
+- Baseline focused run before the messaging patch: `uv run --frozen python -m pytest tests/cyber/test_live_usb_docs.py tests/cyber/test_live_usb_tool.py tests/hermes_cli/test_tools_config.py tests/hermes_cli/test_agentcyber_cmd.py tests/hermes_cli/test_agentcyber_wrapper.py -q -o addopts= --tb=short` -> `163 passed, 8 warnings in 18.08s`.
+- Baseline wrapper before the messaging patch: `scripts/run_tests.sh tests/cyber/test_live_usb_docs.py tests/cyber/test_live_usb_tool.py tests/hermes_cli/test_tools_config.py tests/hermes_cli/test_agentcyber_cmd.py tests/hermes_cli/test_agentcyber_wrapper.py` -> `163 tests passed, 0 failed`.
+- `scripts/agentcyber status --json` before patch -> `live_usb_visible: true`, `live_usb_enabled: false`, `cyber_enabled: true`, local runtime health `ok: true`, git `dirty: false`, and secret fields as booleans/presence only.
+- `scripts/agentcyber hermes tools list` before patch -> `cyber` enabled and `live_usb` disabled.
+- Conflict marker search for lines starting `<<<<<<< ` or `>>>>>>> ` -> `0` matches.
+- Pre-patch `git diff --check && git diff --cached --check` -> passed with no output.
+- Subagent upstream preservation review: `PASS`; required AgentCyber/Live USB files present/tracked, no unmerged/conflict state, and local `HEAD` matched the origin sync branch.
+- Subagent Live USB next-gap review: `REQUEST_CHANGES`; non-root `build`/`write`/`provision` responses still implied root/sudo was the missing condition. This run fixed that gap.
+- RED regression before implementation: `uv run --frozen python -m pytest tests/cyber/test_live_usb_tool.py::TestLiveUsbTool::test_destructive_actions_non_root_guidance_requires_more_than_sudo -q -o addopts= --tb=short` -> `3 failed` because the responses omitted `operator approval`.
+- GREEN regression after implementation: same focused test -> `3 passed in 0.21s`.
+- Focused docs/toolset/tool run after implementation: `uv run --frozen python -m pytest tests/cyber/test_live_usb_tool.py tests/cyber/test_live_usb_docs.py tests/hermes_cli/test_tools_config.py -q -o addopts= --tb=short` -> `154 passed, 8 warnings in 15.93s`.
+- `uv run --frozen python -m ruff check tools/cyber_live_usb.py tests/cyber/test_live_usb_tool.py` -> `All checks passed!`.
+- Expanded wrapper after implementation: `scripts/run_tests.sh tests/cyber/test_live_usb_docs.py tests/cyber/test_live_usb_tool.py tests/hermes_cli/test_tools_config.py tests/hermes_cli/test_agentcyber_cmd.py tests/hermes_cli/test_agentcyber_wrapper.py` -> `166 tests passed, 0 failed`.
+- `scripts/agentcyber status --json` after implementation -> `live_usb_visible: true`, `live_usb_enabled: false`, `cyber_enabled: true`, local runtime health `ok: true`, git `dirty: true` only because this lane had uncommitted repo-local changes, and secret fields as booleans/presence only.
+- `scripts/agentcyber hermes tools list` after implementation -> `cyber` enabled and `live_usb` disabled.
+- Final pre-commit `git diff --check && git diff --cached --check` -> passed with no output.
+- Subagent spec re-review after implementation: `PASS`.
+- Subagent quality re-review after implementation: `APPROVED`; no critical, important, or minor issues.
+
+**Blockers / boundaries**
+
+- No upstream drift was present, so no upstream merge was needed this run.
+- No cron jobs were scheduled, created, updated, paused, resumed, or removed.
+- No default `~/.hermes`, default gateway, default cron, or default profiles were modified.
+- No files were deleted.
+- No USB/block-device writes, ISO builds as root, `sudo`, package installs, hardware actions, external security actions, cloud spend, credential access/disclosure, or public disclosure were performed.
+- Status commands contacted only the configured local Ollama health endpoint and printed booleans/status fields, not secrets.
+
+**Commit / push**
+
+- Pre-commit diff stat: `tools/cyber_live_usb.py` and `tests/cyber/test_live_usb_tool.py`, plus this ledger.
+- This entry will be committed with the scoped non-root guidance fix. After pushing, final verification should check local HEAD equals the remote branch tip and stop rather than amending the ledger again solely to mention the final commit SHA.
+
+**Next lane**
+
+- Commit and push this scoped non-root guidance/ledger lane to the guarded sync branch, then verify local HEAD equals the remote branch tip.
+- Open/review/merge the guarded sync branch into AgentCyber main only after human approval; do not force-push.

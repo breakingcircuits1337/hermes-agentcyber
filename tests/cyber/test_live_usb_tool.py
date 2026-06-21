@@ -128,6 +128,49 @@ class TestLiveUsbTool:
         out = json.loads(_handle({}))
         assert "error" in out
 
+    @pytest.mark.parametrize(
+        ("action", "payload"),
+        [
+            ("build", {"action": "build"}),
+            ("write", {"action": "write", "device": "/dev/sdz", "iso": "/tmp/hermes.iso"}),
+            ("provision", {"action": "provision", "device": "/dev/sdz"}),
+        ],
+    )
+    def test_destructive_actions_non_root_guidance_requires_more_than_sudo(
+        self,
+        action: str,
+        payload: dict[str, object],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        called = {"is_block_device": False}
+
+        def fake_is_block_device(_path) -> bool:  # noqa: ANN001
+            called["is_block_device"] = True
+            pytest.fail(f"{action} must fail root gate before checking block devices")
+
+        monkeypatch.setattr(live_usb, "_running_as_root", lambda: False)
+        monkeypatch.setattr(live_usb.Path, "is_block_device", fake_is_block_device)
+        monkeypatch.setattr(
+            live_usb,
+            "_script",
+            lambda *_args, **_kw: pytest.fail(f"{action} must fail root gate before resolving scripts"),
+        )
+        monkeypatch.setattr(
+            live_usb,
+            "_run",
+            lambda *_args, **_kw: pytest.fail(f"{action} must fail root gate before running scripts"),
+        )
+
+        out = json.loads(_handle(payload))
+        combined = json.dumps(out).lower()
+
+        assert "root" in combined
+        assert "operator approval" in combined
+        assert "root alone" in combined
+        assert "not sufficient" in combined
+        assert "sudo live-usb/write_usb.sh --iso <path> --device <dev> --yes" not in combined
+        assert called["is_block_device"] is False
+
     def test_build_requires_operator_approval_when_root(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(live_usb, "_running_as_root", lambda: True)
         monkeypatch.delenv("HERMES_AGENTCYBER_LIVE_USB_APPROVAL", raising=False)
