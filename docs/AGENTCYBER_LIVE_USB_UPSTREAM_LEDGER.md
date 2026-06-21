@@ -1,0 +1,86 @@
+# AgentCyber Live USB + Upstream Sync Ledger
+
+Started: 2026-06-21
+Repo: `/home/kbun/Desktop/hermes-agentcyber`
+
+## Mission
+
+Finish/verify the AgentCyber Live USB feature and keep the fork synchronized with upstream Hermes without disturbing default Hermes.
+
+## Initial findings
+
+- `tools/cyber_live_usb.py` exists.
+- `tests/cyber/test_live_usb_tool.py` exists.
+- Focused current test passed before this ledger was created: `9 passed in 0.27s`.
+- `git rev-list --count HEAD..upstream/main` returned `0`, so the fork is currently not behind upstream.
+- `git rev-list --count upstream/main..HEAD` returned `60`, so AgentCyber has downstream commits ahead of upstream.
+
+## Boundaries
+
+- Work only in `/home/kbun/Desktop/hermes-agentcyber` unless doing read-only inspection.
+- Do not modify default `~/.hermes`, default gateway, default cron, or default profiles.
+- Do not write to a USB device, build ISO as root, install packages, use sudo, or touch block devices without explicit approval.
+- Do not delete files. If cleanup is needed, record a proposal only.
+- Do not push/merge unless tests pass and the change is scoped to AgentCyber.
+- Preserve Cyber Edition files during upstream sync.
+- Redact secrets.
+
+## Live USB objectives
+
+- Verify the `live_usb` tool is visible but disabled by default in standalone AgentCyber.
+- Expand tests for safe status/list behavior, non-root guardrails, invalid action handling, and no accidental block-device writes.
+- Check docs/runbook for clear operator steps.
+- Add missing health/status commands if needed.
+- Keep destructive/hardware actions gated.
+
+## Upstream sync objectives
+
+- Fetch upstream each run.
+- If behind upstream, create a guarded sync branch and merge upstream safely.
+- Preserve Cyber Edition files and run focused tests.
+- If no upstream drift, record that and continue Live USB work.
+
+## Run log
+
+### 2026-06-21T19:50:55Z — guarded upstream sync branch
+
+**Commands / status**
+
+- `git status --short --branch` at start: `## main...origin/main` plus untracked `docs/AGENTCYBER_LIVE_USB_UPSTREAM_LEDGER.md`.
+- `git fetch upstream main --prune && git fetch origin main --prune`: upstream advanced from `2ab09a6c5` to `1f4c5aed6`; origin fetched cleanly.
+- Drift after fetch: `git rev-list --count HEAD..upstream/main` -> `172`; `git rev-list --count upstream/main..HEAD` -> `60`; `git rev-list --count HEAD..origin/main` -> `0`; `git rev-list --count origin/main..HEAD` -> `0`.
+- Created guarded branch: `agentcyber/upstream-sync-20260621-194355`.
+- Ran `git merge --no-ff upstream/main`; one conflict occurred in `website/docs/user-guide/skills/optional/creative/creative-kanban-video-orchestrator.md`.
+
+**Changed files**
+
+- Broad upstream merge staged many upstream Hermes changes, including platform plugin moves, docs/i18n updates, gateway/cron/tool changes, desktop updates, and tests.
+- Manual conflict resolution kept the existing valid Spotify docs link in `website/docs/user-guide/skills/optional/creative/creative-kanban-video-orchestrator.md`.
+- Fixed staged upstream whitespace/diff-check issues in:
+  - `tests/hermes_cli/test_setup.py`
+  - `tests/run_agent/test_codex_app_server_integration.py`
+  - `tests/run_agent/test_in_place_compaction.py`
+  - `website/docs/user-guide/profile-distributions.md`
+- Added/updated this ledger: `docs/AGENTCYBER_LIVE_USB_UPSTREAM_LEDGER.md`.
+- Review confirmed key AgentCyber/Live USB files still exist and had no staged/unstaged modifications from the merge lane: `tools/cyber_live_usb.py`, `tests/cyber/test_live_usb_tool.py`, `scripts/agentcyber`, `docs/AGENTCYBER_STANDALONE_RUNBOOK.md`, `live-usb/build_iso.sh`, `live-usb/write_usb.sh`, `live-usb/provision.sh`.
+
+**Verification**
+
+- First combined `uv run --frozen python -m pytest ... -q -o addopts= --tb=short` showed one order-dependent failure in `tests/hermes_cli/test_tools_config.py::test_get_platform_tools_recovers_non_configurable_toolsets_from_composite`; rerunning that test alone passed. The isolated project wrapper was used for acceptance.
+- Focused acceptance wrapper: `scripts/run_tests.sh tests/cyber/test_live_usb_tool.py tests/hermes_cli/test_agentcyber_cmd.py tests/hermes_cli/test_agentcyber_wrapper.py tests/hermes_cli/test_tools_config.py` -> `119 tests passed, 0 failed`.
+- After whitespace fixes, expanded wrapper: `scripts/run_tests.sh tests/cyber/test_live_usb_tool.py tests/hermes_cli/test_agentcyber_cmd.py tests/hermes_cli/test_agentcyber_wrapper.py tests/hermes_cli/test_tools_config.py tests/hermes_cli/test_setup.py tests/run_agent/test_codex_app_server_integration.py tests/run_agent/test_in_place_compaction.py` -> `165 tests passed, 0 failed`.
+- `git diff --cached --check` -> passed with no output.
+- `git diff --check` -> passed with no output.
+- Subagent spec review: `PASS`; no unresolved conflicts; required AgentCyber/Live USB files present and tracked.
+- Subagent quality re-review after fixes: `APPROVED`; no critical or important issues.
+
+**Blockers / boundaries**
+
+- No USB/block-device, root, sudo, package install, cron mutation, gateway mutation, external security, cloud, hardware, or secret-disclosure actions were performed.
+- Merge is staged and ready for commit at this checkpoint; no full-suite run was attempted because this cron lane stayed focused on AgentCyber/Live USB plus directly touched tests.
+
+**Next lane**
+
+- Commit the guarded upstream sync branch and push it to origin if final status remains clean.
+- After branch push, open or hand off for review/merge into AgentCyber main; do not force-push.
+- Future runs should re-check upstream drift, focused Live USB tests, toolset/status visibility, and this ledger before taking any new implementation lane.
