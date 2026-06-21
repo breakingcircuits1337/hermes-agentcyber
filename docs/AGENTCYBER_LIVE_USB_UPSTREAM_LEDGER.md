@@ -544,9 +544,13 @@ Finish/verify the AgentCyber Live USB feature and keep the fork synchronized wit
 **Commit / push**
 
 - Upstream merge commit already created by `git merge`: `ea9567b65bb804f28a748863b51c9b173bf20e2d`.
-- This README/docs-test/ledger lane is ready for a scoped commit and push after final staging review. A bounded ledger-only follow-up may be needed after push to record the exact commit SHA and remote verification, then final verification should stop rather than amending the ledger again solely to mention the ledger-only commit SHA.
+- Committed scoped README/docs-test/ledger changes on the guarded sync branch: `52144539ea733438f8b5dbe5399dc47ecc7cfaa6` (`docs: document AgentCyber live USB approval gates`).
+- Pushed to `origin/agentcyber/upstream-sync-20260621-194355` without force.
+- Verified local and remote branch tips matched after push: `git rev-parse HEAD` and `git rev-parse origin/agentcyber/upstream-sync-20260621-194355` both returned `52144539ea733438f8b5dbe5399dc47ecc7cfaa6`.
+- Post-push drift: `HEAD..origin/agentcyber/upstream-sync-20260621-194355` -> `0`; `origin/agentcyber/upstream-sync-20260621-194355..HEAD` -> `0`; `HEAD..upstream/main` -> `0`; `upstream/main..HEAD` -> `86`.
+- This is the bounded ledger-only follow-up recording the post-push facts. After pushing this ledger commit, final verification should check local HEAD equals the remote branch tip and stop rather than amending the ledger again solely to mention the ledger-only commit SHA.
 
 **Next lane**
 
-- Commit and push the scoped upstream merge plus README docs-test lane to the guarded sync branch without force, then verify local HEAD equals the remote branch tip.
+- Push this bounded ledger-only follow-up to the guarded sync branch and verify local HEAD equals the remote branch tip.
 - Open/review/merge the guarded sync branch into AgentCyber main only after human approval; do not force-push.
