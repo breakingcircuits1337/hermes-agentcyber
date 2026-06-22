@@ -53,6 +53,19 @@ AUTO_YES=false
 OPERATOR_APPROVAL=""
 OPERATOR_APPROVAL_PROVIDED=false
 OPERATOR_APPROVAL_STDIN=false
+PROVISION_MNT_TMP=""
+PROVISION_TMP_CFG=""
+
+cleanup_provision_staging() {
+  if [[ -n "${PROVISION_MNT_TMP:-}" ]]; then
+    umount "${PROVISION_MNT_TMP}" 2>/dev/null || true
+    rm -rf "${PROVISION_MNT_TMP}"
+  fi
+  if [[ -n "${PROVISION_TMP_CFG:-}" ]]; then
+    rm -rf "${PROVISION_TMP_CFG}"
+  fi
+}
+trap cleanup_provision_staging EXIT
 
 # ---- Argument parsing -------------------------------------------------------
 while [[ $# -gt 0 ]]; do
@@ -174,6 +187,76 @@ _canonical_removable_device() {
   printf '%s\n' "$canonical"
 }
 
+_validate_config_dir() {
+  local config_dir="$1"
+  if [[ ! -d "$config_dir" ]]; then
+    echo "❌  Config directory not found: ${config_dir}" >&2
+    return 1
+  fi
+  if [[ ! -f "${config_dir}/config.yaml" || -L "${config_dir}/config.yaml" ]]; then
+    echo "❌  Config directory must contain a non-symlink config.yaml: ${config_dir}" >&2
+    return 1
+  fi
+}
+
+_validate_config_tarball() {
+  local archive="$1"
+  if [[ ! -f "$archive" ]]; then
+    echo "❌  Config archive not found or not a regular file: ${archive}" >&2
+    return 1
+  fi
+  if ! tar tzf "$archive" >/dev/null 2>&1; then
+    echo "❌  Config archive must be a readable gzip tarball: ${archive}" >&2
+    return 1
+  fi
+  if ! python3 - "$archive" <<'PY'
+import sys
+import tarfile
+
+archive = sys.argv[1]
+try:
+    with tarfile.open(archive, "r:gz") as tf:
+        members = tf.getmembers()
+except (tarfile.TarError, OSError):
+    sys.exit(2)
+
+for member in members:
+    parts = member.name.split("/")
+    if member.name.startswith("/") or ".." in parts:
+        sys.exit(3)
+
+config_members = [
+    member for member in members
+    if member.name in {".hermes/config.yaml", "./.hermes/config.yaml"}
+]
+if len(config_members) != 1:
+    sys.exit(4)
+
+config_member = config_members[0]
+if not config_member.isfile() or config_member.issym() or config_member.islnk():
+    sys.exit(5)
+
+for member in members:
+    if member.name.rstrip("/") in {".hermes", "./.hermes"} and not member.isdir():
+        sys.exit(6)
+PY
+  then
+    echo "❌  Config archive must contain exactly one top-level .hermes/config.yaml regular file: ${archive}" >&2
+    echo "    Refusing unsafe paths, duplicates, symlinks, hardlinks, or special-file config entries." >&2
+    return 1
+  fi
+}
+
+_validate_provision_input() {
+  local provision_path="$1"
+  [[ -z "$provision_path" ]] && return 0
+  if [[ -d "$provision_path" ]]; then
+    _validate_config_dir "$provision_path"
+    return $?
+  fi
+  _validate_config_tarball "$provision_path"
+}
+
 if [[ "$LIST_ONLY" == "true" ]]; then
   list_removable
   exit 0
@@ -197,6 +280,7 @@ if [[ ! -f "$ISO" ]]; then
 fi
 ISO_SIZE=$(du -sh "$ISO" | cut -f1)
 ISO_BYTES=$(stat -c%s "$ISO")
+_validate_provision_input "$PROVISION_PATH" || exit 1
 
 # ---- Device selection -------------------------------------------------------
 if [[ -z "$DEVICE" ]]; then
@@ -307,17 +391,28 @@ if [[ -n "$PROVISION_PATH" ]]; then
   }
 
   if [[ -n "$CFG_PART" ]]; then
-    MNT_TMP=$(mktemp -d)
-    mount "${CFG_PART}" "${MNT_TMP}"
+    PROVISION_MNT_TMP=$(mktemp -d)
+    mount "${CFG_PART}" "${PROVISION_MNT_TMP}"
     if [[ -d "$PROVISION_PATH" ]]; then
-      tar czf "${MNT_TMP}/hermes-config.tar.gz" \
-        -C "$(dirname "$PROVISION_PATH")" "$(basename "$PROVISION_PATH")"
+      _validate_config_dir "$PROVISION_PATH" || exit 1
+      PROVISION_TMP_CFG=$(mktemp -d)
+      mkdir -p "${PROVISION_TMP_CFG}/.hermes"
+      tar cf - -C "$PROVISION_PATH" . | tar xf - -C "${PROVISION_TMP_CFG}/.hermes"
+      tar czf "${PROVISION_MNT_TMP}/hermes-config.tar.gz" \
+        -C "${PROVISION_TMP_CFG}" ".hermes"
+      rm -rf "${PROVISION_TMP_CFG}"
+      PROVISION_TMP_CFG=""
     elif [[ -f "$PROVISION_PATH" ]]; then
-      cp "$PROVISION_PATH" "${MNT_TMP}/hermes-config.tar.gz"
+      _validate_config_tarball "$PROVISION_PATH" || exit 1
+      cp "$PROVISION_PATH" "${PROVISION_MNT_TMP}/hermes-config.tar.gz"
+    else
+      echo "❌  Provision path must be a .hermes directory or valid .tar.gz archive: ${PROVISION_PATH}" >&2
+      exit 1
     fi
     sync
-    umount "${MNT_TMP}"
-    rm -rf "${MNT_TMP}"
+    umount "${PROVISION_MNT_TMP}"
+    rm -rf "${PROVISION_MNT_TMP}"
+    PROVISION_MNT_TMP=""
     echo "  ✓ Config provisioned to ${CFG_PART} (HERMESCFG)"
   fi
 fi

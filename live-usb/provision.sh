@@ -155,6 +155,66 @@ _partition_path() {
   fi
 }
 
+_validate_config_dir() {
+  local config_dir="$1"
+  if [[ ! -d "$config_dir" ]]; then
+    echo "❌  Config directory not found: ${config_dir}" >&2
+    return 1
+  fi
+  if [[ ! -f "${config_dir}/config.yaml" || -L "${config_dir}/config.yaml" ]]; then
+    echo "❌  Config directory must contain a non-symlink config.yaml: ${config_dir}" >&2
+    return 1
+  fi
+}
+
+_validate_config_tarball() {
+  local archive="$1"
+  if [[ ! -f "$archive" ]]; then
+    echo "❌  Config archive not found or not a regular file: ${archive}" >&2
+    return 1
+  fi
+  if ! tar tzf "$archive" >/dev/null 2>&1; then
+    echo "❌  Config archive must be a readable gzip tarball: ${archive}" >&2
+    return 1
+  fi
+  if ! python3 - "$archive" <<'PY'
+import sys
+import tarfile
+
+archive = sys.argv[1]
+try:
+    with tarfile.open(archive, "r:gz") as tf:
+        members = tf.getmembers()
+except (tarfile.TarError, OSError):
+    sys.exit(2)
+
+for member in members:
+    parts = member.name.split("/")
+    if member.name.startswith("/") or ".." in parts:
+        sys.exit(3)
+
+config_members = [
+    member for member in members
+    if member.name in {".hermes/config.yaml", "./.hermes/config.yaml"}
+]
+if len(config_members) != 1:
+    sys.exit(4)
+
+config_member = config_members[0]
+if not config_member.isfile() or config_member.issym() or config_member.islnk():
+    sys.exit(5)
+
+for member in members:
+    if member.name.rstrip("/") in {".hermes", "./.hermes"} and not member.isdir():
+        sys.exit(6)
+PY
+  then
+    echo "❌  Config archive must contain exactly one top-level .hermes/config.yaml regular file: ${archive}" >&2
+    echo "    Refusing unsafe paths, duplicates, symlinks, hardlinks, or special-file config entries." >&2
+    return 1
+  fi
+}
+
 [[ -z "$DEVICE" ]]    && { echo "❌  --usb required";   exit 1; }
 require_operator_approval "provision" || exit 1
 if [[ $EUID -ne 0 ]]; then
@@ -169,6 +229,12 @@ if [[ ! -b "$PROVISION_PART" ]]; then
   echo "❌  Config partition ${PROVISION_PART} not found."
   echo "    Write the ISO first (./write_usb.sh) — it creates a config partition."
   exit 1
+fi
+if [[ -n "$CONFIG_TARBALL" ]]; then
+  _validate_config_tarball "$CONFIG_TARBALL" || exit 1
+fi
+if [[ -n "$CONFIG_DIR" ]]; then
+  _validate_config_dir "$CONFIG_DIR" || exit 1
 fi
 
 MNT=$(mktemp -d)
@@ -195,6 +261,7 @@ if [[ -n "$CONFIG_DIR" ]]; then
   echo "✓  Config dir packed from ${CONFIG_DIR} as .hermes"
 
 elif [[ -n "$CONFIG_TARBALL" ]]; then
+  _validate_config_tarball "$CONFIG_TARBALL" || exit 1
   cp "$CONFIG_TARBALL" "${MNT}/hermes-config.tar.gz"
   echo "✓  Config tarball copied"
 

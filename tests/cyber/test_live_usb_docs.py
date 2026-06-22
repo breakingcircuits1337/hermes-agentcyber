@@ -239,15 +239,100 @@ def test_direct_provision_script_repacks_config_dirs_as_dot_hermes() -> None:
 
     assert 'config=".agentcyber-home"' in section
     assert "repack" in section.lower()
-    assert "prebuilt tarballs must already contain a `.hermes/` top-level directory" in section
+    assert "prebuilt tarballs must already contain `.hermes/config.yaml`" in section
     assert 'tar cf - -C "$CONFIG_DIR" .' in provision_script
     assert 'tar xf - -C "${TMP_CFG}/.hermes"' in provision_script
+    assert '_validate_config_dir "$CONFIG_DIR" || exit 1' in provision_script
+    assert '[[ ! -f "${config_dir}/config.yaml" || -L "${config_dir}/config.yaml" ]]' in provision_script
     assert 'tar czf "${MNT}/hermes-config.tar.gz" \\' in provision_script
     assert '-C "${TMP_CFG}" ".hermes"' in provision_script
     assert 'TMP_CFG=""' in provision_script
     assert 'if [[ -n "${TMP_CFG:-}" ]]' in provision_script
     assert 'TMP_CFG=""\n  echo "✓  Config dir packed from ${CONFIG_DIR} as .hermes"' in provision_script
     assert '-C "$(dirname "$CONFIG_DIR")" "$(basename "$CONFIG_DIR")"' not in provision_script
+
+
+def test_write_usb_provision_dirs_are_repacked_as_dot_hermes_with_cleanup() -> None:
+    write_script = (LIVE_USB_DIR / "write_usb.sh").read_text(encoding="utf-8")
+
+    assert "cleanup_provision_staging()" in write_script
+    assert "trap cleanup_provision_staging EXIT" in write_script
+    assert 'if [[ -n "${PROVISION_TMP_CFG:-}" ]]' in write_script
+    assert '_validate_config_dir "$PROVISION_PATH" || exit 1' in write_script
+    assert '[[ ! -f "${config_dir}/config.yaml" || -L "${config_dir}/config.yaml" ]]' in write_script
+    assert 'PROVISION_TMP_CFG=$(mktemp -d)' in write_script
+    assert 'mkdir -p "${PROVISION_TMP_CFG}/.hermes"' in write_script
+    assert 'tar cf - -C "$PROVISION_PATH" .' in write_script
+    assert 'tar xf - -C "${PROVISION_TMP_CFG}/.hermes"' in write_script
+    assert 'tar czf "${PROVISION_MNT_TMP}/hermes-config.tar.gz" \\' in write_script
+    assert '-C "${PROVISION_TMP_CFG}" ".hermes"' in write_script
+    assert 'PROVISION_TMP_CFG=""' in write_script
+    assert '-C "$(dirname "$PROVISION_PATH")" "$(basename "$PROVISION_PATH")"' not in write_script
+
+
+def test_live_usb_config_tarballs_are_validated_before_copy_or_write() -> None:
+    provision_script = (LIVE_USB_DIR / "provision.sh").read_text(encoding="utf-8")
+    write_script = (LIVE_USB_DIR / "write_usb.sh").read_text(encoding="utf-8")
+
+    for script in (provision_script, write_script):
+        assert "_validate_config_tarball()" in script
+        assert 'tar tzf "$archive" >/dev/null 2>&1' in script
+        assert "python3 - \"$archive\" <<'PY'" in script
+        assert "import tarfile" in script
+        assert "tarfile.open(archive, \"r:gz\")" in script
+        assert 'member.name.startswith("/") or ".." in parts' in script
+        assert 'member.name in {".hermes/config.yaml", "./.hermes/config.yaml"}' in script
+        assert "len(config_members) != 1" in script
+        assert "not config_member.isfile() or config_member.issym() or config_member.islnk()" in script
+        assert 'member.name.rstrip("/") in {".hermes", "./.hermes"} and not member.isdir()' in script
+        assert "exactly one top-level .hermes/config.yaml regular file" in script
+        assert "Refusing unsafe paths, duplicates, symlinks, hardlinks, or special-file config entries" in script
+
+    provision_validation = provision_script.index('_validate_config_tarball "$CONFIG_TARBALL" || exit 1')
+    provision_copy = provision_script.index('cp "$CONFIG_TARBALL" "${MNT}/hermes-config.tar.gz"')
+    assert provision_validation < provision_copy
+
+    write_validation = write_script.index('_validate_provision_input "$PROVISION_PATH" || exit 1')
+    write_dd = write_script.index('echo "▶ Writing ISO to ${DEVICE}..."')
+    write_copy_validation = write_script.index('_validate_config_tarball "$PROVISION_PATH" || exit 1')
+    write_copy = write_script.index('cp "$PROVISION_PATH" "${PROVISION_MNT_TMP}/hermes-config.tar.gz"')
+    assert write_validation < write_dd
+    assert write_copy_validation < write_copy
+
+
+def test_firstboot_provisioned_config_archive_fail_closed_until_config_exists() -> None:
+    firstboot = FIRSTBOOT.read_text(encoding="utf-8")
+    gateway_service = GATEWAY_SERVICE.read_text(encoding="utf-8")
+
+    old_extract = 'tar xzf "${TMP_MNT}/hermes-config.tar.gz" -C "$(dirname "$HERMES_HOME")"'
+    old_swallow_extract = f"{old_extract} 2>/dev/null || true"
+
+    assert old_extract not in firstboot
+    assert old_swallow_extract not in firstboot
+    assert "_valid_extracted_config_file()" in firstboot
+    assert '[[ -f "$config_file" && ! -L "$config_file" ]]' in firstboot
+    assert 'stat -c %F -- "$config_file"' in firstboot
+    assert 'stat -c %h -- "$config_file"' in firstboot
+    assert 'tar xzf "${TMP_MNT}/hermes-config.tar.gz" -C "$TMP_EXTRACT" 2>/dev/null \\' in firstboot
+    assert '&& _valid_extracted_config_file "${TMP_EXTRACT}/.hermes/config.yaml"; then' in firstboot
+    assert 'tar cf - -C "${TMP_EXTRACT}/.hermes" .' in firstboot
+    assert 'tar xf - -C "${HERMES_HOME}"' in firstboot
+    assert "refusing firstboot completion" in firstboot
+    assert "ConditionPathExists=/home/hermes/.hermes/.firstboot_complete" in gateway_service
+    assert "ConditionPathExists=/home/hermes/.hermes/config.yaml" in gateway_service
+
+    autoload = firstboot.index("Found provisioned config on HERMESCFG")
+    extraction = firstboot.index('if tar xzf "${TMP_MNT}/hermes-config.tar.gz"', autoload)
+    config_check = firstboot.index('_valid_extracted_config_file "${TMP_EXTRACT}/.hermes/config.yaml"', extraction)
+    apply_copy = firstboot.index('tar cf - -C "${TMP_EXTRACT}/.hermes" .', config_check)
+    success_touch = firstboot.index('touch "$FLAG_FILE"', apply_copy)
+    success_gateway = firstboot.index("systemctl start hermes-gateway.service", success_touch)
+    invalid_archive = firstboot.index("Provisioned config archive is invalid", success_gateway)
+    invalid_exit = firstboot.index("exit 1", invalid_archive)
+    wizard = firstboot.index("Interactive first-boot wizard", invalid_exit)
+
+    assert extraction < config_check < apply_copy < success_touch < success_gateway
+    assert success_gateway < invalid_archive < invalid_exit < wizard
 
 
 def test_direct_build_script_rejects_dev_or_block_output_targets() -> None:
@@ -271,6 +356,8 @@ def test_direct_build_completion_guidance_does_not_imply_sudo_is_enough() -> Non
     assert "--operator-approval" in lowered
     assert "canonical whole removable /dev disk" in lowered
     assert "write to usb:  sudo ./write_usb.sh" not in lowered
+    assert "--config config.yaml" not in lowered
+    assert "--config .agentcyber-home" in lowered
 
 
 def test_firstboot_forensic_mode_skips_host_mounts_and_gateway_startup() -> None:
@@ -283,6 +370,8 @@ def test_firstboot_forensic_mode_skips_host_mounts_and_gateway_startup() -> None
     assert "noautomount noswap nopersistent" in grub_cfg
     assert "HERMES_LIVE_MODE=forensic" in grub_cfg
     assert "ConditionKernelCommandLine=!HERMES_LIVE_MODE=forensic" in gateway_service
+    assert "ConditionPathExists=/home/hermes/.hermes/.firstboot_complete" in gateway_service
+    assert "ConditionPathExists=/home/hermes/.hermes/config.yaml" in gateway_service
 
     forensic_guard = firstboot.index("if _is_forensic_mode; then")
     pypi_install = firstboot.index("if [[ -f /opt/hermes-install-on-firstboot ]]", forensic_guard)

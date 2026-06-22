@@ -58,6 +58,13 @@ _hermescfg_partition() {
   return 1
 }
 
+_valid_extracted_config_file() {
+  local config_file="$1"
+  [[ -f "$config_file" && ! -L "$config_file" ]] || return 1
+  [[ "$(stat -c %F -- "$config_file" 2>/dev/null)" == "regular file" ]] || return 1
+  [[ "$(stat -c %h -- "$config_file" 2>/dev/null)" == "1" ]] || return 1
+}
+
 # ---- Guard: only run once ---------------------------------------------------
 if [[ -f "$FLAG_FILE" ]]; then
   exit 0
@@ -107,19 +114,35 @@ fi
 CONFIG_PART="$(_hermescfg_partition || true)"
 if [[ -n "$CONFIG_PART" ]]; then
   TMP_MNT=$(mktemp -d)
+  TMP_EXTRACT=""
+  cleanup_provision_autoload() {
+    umount "$TMP_MNT" 2>/dev/null || true
+    rm -rf "$TMP_MNT"
+    if [[ -n "${TMP_EXTRACT:-}" ]]; then
+      rm -rf "$TMP_EXTRACT"
+    fi
+  }
+
   if mount -o ro "$CONFIG_PART" "$TMP_MNT" 2>/dev/null; then
     if [[ -f "${TMP_MNT}/hermes-config.tar.gz" ]]; then
       echo ""
       echo "  🔑  Found provisioned config on HERMESCFG — applying..."
-      mkdir -p "${HERMES_HOME}"
-      tar xzf "${TMP_MNT}/hermes-config.tar.gz" -C "$(dirname "$HERMES_HOME")" 2>/dev/null || true
-      umount "$TMP_MNT"
-      rm -rf "$TMP_MNT"
-      echo "  ✓  Config loaded from HERMESCFG provision partition"
-      touch "$FLAG_FILE"
-      # Skip the wizard
-      systemctl start hermes-gateway.service 2>/dev/null || true
-      exit 0
+      TMP_EXTRACT=$(mktemp -d)
+      if tar xzf "${TMP_MNT}/hermes-config.tar.gz" -C "$TMP_EXTRACT" 2>/dev/null \
+        && _valid_extracted_config_file "${TMP_EXTRACT}/.hermes/config.yaml"; then
+        mkdir -p "${HERMES_HOME}"
+        if tar cf - -C "${TMP_EXTRACT}/.hermes" . | tar xf - -C "${HERMES_HOME}"; then
+          cleanup_provision_autoload
+          echo "  ✓  Config loaded from HERMESCFG provision partition"
+          touch "$FLAG_FILE"
+          # Skip the wizard
+          systemctl start hermes-gateway.service 2>/dev/null || true
+          exit 0
+        fi
+      fi
+      echo "  ❌  Provisioned config archive is invalid or missing .hermes/config.yaml; refusing firstboot completion." >&2
+      cleanup_provision_autoload
+      exit 1
     fi
     umount "$TMP_MNT"
   fi

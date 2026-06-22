@@ -1681,3 +1681,59 @@ Finish/verify the AgentCyber Live USB feature and keep the fork synchronized wit
 
 - Open/review/merge the guarded sync branch into AgentCyber main only after human approval; do not force-push.
 - Future runs should re-check upstream drift, focused Live USB tests, toolset/status visibility, and this ledger. If no upstream drift or new Live USB gap is found, continue treating the lane as verification/no-op.
+
+### 2026-06-22T08:49:32Z — fail closed invalid Live USB provisioned config archives
+
+**Commands / status**
+
+- Read this ledger, `docs/AGENTCYBER_STANDALONE_RUNBOOK.md`, and the high-consequence/no-op lane references before acting.
+- `git status --short --branch && git remote -v && git branch --show-current && git rev-parse HEAD`: started clean on `agentcyber/upstream-sync-20260621-194355...origin/agentcyber/upstream-sync-20260621-194355` at `3c5ab8d5814b1964ee4b38103dfff0058c82d923`; no `MERGE_HEAD` or unmerged files.
+- `git fetch upstream main --prune --no-tags && git fetch origin main --prune --no-tags && git fetch origin agentcyber/upstream-sync-20260621-194355 --prune --no-tags`: fetched read-only.
+- Drift after fetch: `HEAD..upstream/main` -> `0`; `upstream/main..HEAD` -> `119`; `HEAD..origin/main` -> `0`; `origin/main..HEAD` -> `320`; `HEAD..origin/agentcyber/upstream-sync-20260621-194355` -> `0`; `origin/agentcyber/upstream-sync-20260621-194355..HEAD` -> `0`; `upstream/main` is an ancestor of `HEAD`.
+- Baseline focused wrapper acceptance before edits: `scripts/run_tests.sh tests/cyber/test_live_usb_docs.py tests/cyber/test_live_usb_tool.py tests/hermes_cli/test_tools_config.py tests/hermes_cli/test_agentcyber_cmd.py tests/hermes_cli/test_agentcyber_wrapper.py tests/agent/test_redact.py tests/gateway/test_cyber_audit_hook.py` -> `324 tests passed, 0 failed`.
+- Baseline `scripts/agentcyber status --json` before edits reported `live_usb_visible: true`, `live_usb_enabled: false`, `cyber_enabled: true`, local runtime health `ok: true`, git `dirty: false`, head `3c5ab8d5814b1964ee4b38103dfff0058c82d923`, and secret fields summarized as booleans/presence only.
+- Baseline `scripts/agentcyber hermes tools list` showed `cyber` enabled and `live_usb` disabled.
+- Conflict marker search for lines starting `<<<<<<< ` or `>>>>>>> ` returned `0` matches.
+
+**Changed files**
+
+- `live-usb/provision.sh`: added config directory validation requiring a non-symlink `config.yaml`; added pre-copy config archive validation requiring a readable gzip tarball whose metadata has exactly one top-level `.hermes/config.yaml` regular-file member, no unsafe absolute/parent-relative member paths, no duplicate config member, no symlink/hardlink/special config member, and no non-directory `.hermes` parent member.
+- `live-usb/write_usb.sh`: mirrored the same config directory/archive validation for `--provision`, validates provision input before the ISO write path, repacks directory contents under top-level `.hermes/`, and keeps temporary provision staging cleanup in the exit trap.
+- `live-usb/rootfs-overlay/usr/local/bin/hermes-firstboot`: extracts provisioned config archives into a temporary directory first, requires `.hermes/config.yaml` to be a non-symlink regular single-link file before copying into `HERMES_HOME`, and refuses firstboot completion/gateway start for invalid archives.
+- `live-usb/rootfs-overlay/etc/systemd/system/hermes-gateway.service`: added `ConditionPathExists=/home/hermes/.hermes/.firstboot_complete` and `ConditionPathExists=/home/hermes/.hermes/config.yaml` so the independently enabled gateway unit cannot start after failed/incomplete firstboot.
+- `live-usb/build_iso.sh`: changed post-build provisioning guidance from stale `--config config.yaml` to a `.agentcyber-home` config directory example.
+- `README.md` and `docs/AGENTCYBER_STANDALONE_RUNBOOK.md`: documented that config dirs are repacked under `.hermes/`, prebuilt tarballs must contain `.hermes/config.yaml`, invalid/incomplete archives fail closed, and firstboot/gateway only proceed after successful config validation.
+- `tests/cyber/test_live_usb_docs.py`: added invariants for write/provision parity, Python `tarfile` metadata validation, firstboot fail-closed config checks, gateway unit conditions, and stale config example removal.
+- `docs/AGENTCYBER_LIVE_USB_UPSTREAM_LEDGER.md`: added this run entry.
+
+**Verification**
+
+- `bash -n live-usb/rootfs-overlay/usr/local/bin/hermes-firstboot live-usb/build_iso.sh live-usb/write_usb.sh live-usb/provision.sh` -> passed with no output.
+- Focused unit/docs tests after the fix: `uv run --frozen python -m pytest tests/cyber/test_live_usb_docs.py tests/cyber/test_live_usb_tool.py -q -o addopts= --tb=short` -> `77 passed in 1.09s`.
+- Focused lint after the fix: `uv run --frozen python -m ruff check tests/cyber/test_live_usb_docs.py tools/cyber_live_usb.py tests/cyber/test_live_usb_tool.py` -> `All checks passed!`.
+- Focused wrapper acceptance after the fix: `scripts/run_tests.sh tests/cyber/test_live_usb_docs.py tests/cyber/test_live_usb_tool.py tests/hermes_cli/test_tools_config.py tests/hermes_cli/test_agentcyber_cmd.py tests/hermes_cli/test_agentcyber_wrapper.py tests/agent/test_redact.py tests/gateway/test_cyber_audit_hook.py` -> `327 tests passed, 0 failed`.
+- `scripts/agentcyber status --json` after the fix before ledger edit reported `live_usb_visible: true`, `live_usb_enabled: false`, `cyber_enabled: true`, local runtime health `ok: true`, and git `dirty: true` only because this scoped fail-closed fix was in progress.
+- `scripts/agentcyber hermes tools list` after the fix showed `cyber` enabled and `live_usb` disabled.
+- `git diff --check && git diff --cached --check` -> passed with no output before the ledger edit.
+- Read-only preservation/spec review before the fix: `PASS` for upstream/no-op preservation; read-only Live USB safety/docs next-gap review returned `REQUEST_CHANGES` for invalid/mispacked provisioned config archive behavior.
+- Review loops after fixes found and resolved: gateway service fail-open after firstboot failure, firstboot symlink config acceptance, tarball symlink/hardlink/duplicate member acceptance, pipefail/SIGPIPE hazards in early-exit grep pipelines, and tar verbose filename parsing false positives.
+- Final spec re-review after Python `tarfile` metadata validation: `PASS`.
+- Final quality/safety re-review after Python `tarfile` metadata validation: `APPROVED`; no critical, important, or minor issues.
+
+**Blockers / boundaries**
+
+- No upstream drift on `upstream/main` was present, so no upstream merge was needed this run.
+- No cron jobs were scheduled, created, updated, paused, resumed, or removed.
+- No default `~/.hermes`, default gateway, default cron, or default profiles were modified.
+- No files were deleted by this cron run.
+- No USB/block-device writes, ISO builds as root, `sudo`, package installs, hardware actions, external security actions, cloud spend, credential access/disclosure, or public disclosure were performed.
+- Status commands contacted only the configured local Ollama health endpoint and printed booleans/status fields, not secrets.
+
+**Commit / push**
+
+- This scoped Live USB provisioned-config fail-closed fix plus ledger entry should be committed and pushed to `origin/agentcyber/upstream-sync-20260621-194355` without force. After pushing, final verification should check local `HEAD` equals the remote sync branch tip and stop rather than amending this ledger solely to mention the commit SHA.
+
+**Next lane**
+
+- Open/review/merge the guarded sync branch into AgentCyber main only after human approval; do not force-push.
+- Future runs should re-check upstream drift, focused Live USB tests, toolset/status visibility, and this ledger. If no upstream drift or new Live USB gap is found, continue treating the lane as verification/no-op.

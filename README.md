@@ -258,6 +258,8 @@ sudo --preserve-env=HERMES_AGENTCYBER_LIVE_USB_APPROVAL live-usb/write_usb.sh \
   --yes                     # skip confirmation prompt (non-interactive)
 ```
 
+Provisioning accepts either a config directory or a prebuilt gzip tarball. Directory sources are repacked so the directory contents land under top-level `.hermes/` on the USB; for example, `config=".agentcyber-home"` becomes `.hermes/config.yaml` in the provisioned archive. Prebuilt tarballs must already contain a `.hermes/` top-level directory (for example `.hermes/config.yaml`). Invalid or mispacked tarballs fail closed in `write_usb.sh`, `provision.sh`, and first boot: the USB is not provisioned, and first boot will not mark setup complete or start the gateway from an invalid archive.
+
 > **Warning:** `--device` is written with `dd`. Double-check the path — all data on the target drive will be erased.
 
 ---
@@ -340,7 +342,7 @@ sudo --preserve-env=HERMES_AGENTCYBER_LIVE_USB_APPROVAL live-usb/provision.sh --
   --audit
 ```
 
-The provisioned config is written to the `HERMESCFG` FAT32 partition. Direct provisioning requires root plus exact operator approval, and root/sudo alone is not sufficient. Config directories are repacked under a top-level `.hermes/` directory before first boot, so a standalone `.agentcyber-home` can be used as the source directory; prebuilt tarballs must already contain that `.hermes/` top-level directory. On first boot, the wizard detects the archive and starts the gateway automatically — no keyboard input needed.
+The provisioned config is written to the `HERMESCFG` FAT32 partition. Direct provisioning requires root plus exact operator approval, and root/sudo alone is not sufficient. Config directories are repacked under a top-level `.hermes/` directory before first boot, so a standalone `.agentcyber-home` can be used as the source directory; prebuilt tarballs must already contain `.hermes/config.yaml` under that top-level directory. Invalid or incomplete tarballs fail closed before provisioning. On first boot, the wizard detects the archive and starts the gateway automatically only after the archive extracts successfully and `.hermes/config.yaml` is present — no keyboard input needed.
 
 ---
 
@@ -378,7 +380,7 @@ Then ask the agent:
                                              operator_approval="<matching one-time token>")
 ```
 
-The `list_usb` and `status` actions are safe read-only checks and need no root or approval token. `build`, `write`, and `provision` require the agent session to run as root plus an exact operator approval token; set `HERMES_AGENTCYBER_LIVE_USB_APPROVAL` only for the approved maintenance session and pass the exact same value as `operator_approval`. `write` and `provision` also reject targets unless Linux reports verified whole removable `/dev` disk metadata, then use the canonical `/dev/...` target rather than an operator-supplied alias. When `provision` receives a config directory such as `.agentcyber-home`, the direct script repacks its contents under `.hermes` so first boot populates `/home/hermes/.hermes/config.yaml`; prebuilt tarballs must already contain a `.hermes/` top-level directory. Root/sudo alone is not sufficient for these agent tool calls, and unattended cron lanes must not perform them.
+The `list_usb` and `status` actions are safe read-only checks and need no root or approval token. `build`, `write`, and `provision` require the agent session to run as root plus an exact operator approval token; set `HERMES_AGENTCYBER_LIVE_USB_APPROVAL` only for the approved maintenance session and pass the exact same value as `operator_approval`. `write` and `provision` also reject targets unless Linux reports verified whole removable `/dev` disk metadata, then use the canonical `/dev/...` target rather than an operator-supplied alias. When `provision` receives a config directory such as `.agentcyber-home`, the direct script repacks its contents under `.hermes` so first boot populates `/home/hermes/.hermes/config.yaml`; prebuilt tarballs must already contain `.hermes/config.yaml` under a top-level `.hermes/` directory. Invalid or incomplete tarballs fail closed before provisioning. Root/sudo alone is not sufficient for these agent tool calls, and unattended cron lanes must not perform them.
 
 ---
 
