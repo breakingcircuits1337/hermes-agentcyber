@@ -212,6 +212,66 @@ class TestLiveUsbTool:
         assert "operator approval" in out["error"]
         assert out["reason"] == "missing HERMES_AGENTCYBER_LIVE_USB_APPROVAL"
 
+    def test_build_rejects_dev_output_before_script_or_run(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("HERMES_AGENTCYBER_LIVE_USB_APPROVAL", "approved-live-usb-lane")
+        monkeypatch.setattr(live_usb, "_running_as_root", lambda: True)
+        monkeypatch.setattr(
+            live_usb,
+            "_script",
+            lambda *_args, **_kw: pytest.fail("build must reject unsafe output before resolving scripts"),
+        )
+        monkeypatch.setattr(
+            live_usb,
+            "_run",
+            lambda *_args, **_kw: pytest.fail("build must reject unsafe output before running build_iso.sh"),
+        )
+
+        out = json.loads(_handle({
+            "action": "build",
+            "operator_approval": "approved-live-usb-lane",
+            "output": "/dev/hermes-cyber-live.iso",
+        }))
+
+        assert out["error"] == "Unsafe ISO output target: /dev/hermes-cyber-live.iso"
+        assert out["reason"] == "output target canonicalizes under /dev"
+        assert "regular file path" in out["hint"]
+
+    def test_build_rejects_existing_block_output_before_resolve_or_run(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        output = "/tmp/operator-output-block"
+        called = {"resolve": False}
+
+        def fake_resolve(_path: Any, strict: bool = False) -> live_usb.Path:
+            called["resolve"] = True
+            pytest.fail("existing block output must fail before path resolution")
+
+        monkeypatch.setenv("HERMES_AGENTCYBER_LIVE_USB_APPROVAL", "approved-live-usb-lane")
+        monkeypatch.setattr(live_usb, "_running_as_root", lambda: True)
+        monkeypatch.setattr(live_usb.Path, "is_block_device", lambda path: str(path) == output)
+        monkeypatch.setattr(live_usb.Path, "resolve", fake_resolve)
+        monkeypatch.setattr(
+            live_usb,
+            "_script",
+            lambda *_args, **_kw: pytest.fail("build must reject block output before resolving scripts"),
+        )
+        monkeypatch.setattr(
+            live_usb,
+            "_run",
+            lambda *_args, **_kw: pytest.fail("build must reject block output before running build_iso.sh"),
+        )
+
+        out = json.loads(_handle({
+            "action": "build",
+            "operator_approval": "approved-live-usb-lane",
+            "output": output,
+        }))
+
+        assert out["error"] == f"Unsafe ISO output target: {output}"
+        assert out["reason"] == "output target is an existing block device"
+        assert called["resolve"] is False
+
     def test_write_requires_operator_approval_before_touching_device(self, monkeypatch: pytest.MonkeyPatch) -> None:
         called = {"is_block_device": False}
 

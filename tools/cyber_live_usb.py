@@ -203,6 +203,45 @@ def _require_verifiably_removable_block_device(device: str) -> str | dict:
     return _removable_block_device_error(device, "Linux removable flag is missing or unreadable")
 
 
+def _unsafe_build_output_error(output: str, reason: str) -> dict:
+    """Return a fail-closed error for unsafe ISO output targets."""
+    return {
+        "error": f"Unsafe ISO output target: {output}",
+        "reason": reason,
+        "hint": (
+            "ISO build output must be a regular file path, not an existing block "
+            "device or any path that canonicalizes under /dev. Use write/provision "
+            "for approved removable-media operations."
+        ),
+    }
+
+
+def _reject_unsafe_build_output(output: str) -> dict | None:
+    """Reject build outputs that could become block-device writes.
+
+    Building an ISO is high-consequence but should still write only to a normal
+    file. This guard blocks accidental ``--output /dev/...`` usage and symlink
+    aliases that resolve into ``/dev`` before ``build_iso.sh`` is invoked.
+    """
+    output_path = Path(output)
+    try:
+        if output_path.is_block_device():
+            return _unsafe_build_output_error(output, "output target is an existing block device")
+    except OSError:
+        return _unsafe_build_output_error(output, "could not safely inspect output target")
+
+    try:
+        resolved_output = output_path.resolve(strict=False)
+    except (OSError, RuntimeError):
+        return _unsafe_build_output_error(output, "could not safely resolve output target")
+
+    dev_root = Path("/dev")
+    if resolved_output == dev_root or dev_root in resolved_output.parents:
+        return _unsafe_build_output_error(output, "output target canonicalizes under /dev")
+
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Action handlers
 # ---------------------------------------------------------------------------
@@ -312,6 +351,11 @@ def _build(args: dict, **_kw: Any) -> dict:
     if approval_error:
         return approval_error
 
+    output_path = args.get("output", str(_SCRIPTS_DIR / "hermes-cyber-live.iso"))
+    output_error = _reject_unsafe_build_output(output_path)
+    if output_error:
+        return output_error
+
     script = _script("build_iso.sh")
     cmd = ["bash", script]
 
@@ -323,7 +367,6 @@ def _build(args: dict, **_kw: Any) -> dict:
     if args.get("headless_scan"): cmd += ["--headless-scan"]
     if args.get("verbose"):      cmd += ["--verbose"]
 
-    output_path = args.get("output", str(_SCRIPTS_DIR / "hermes-cyber-live.iso"))
     result = _run(cmd, timeout=int(args.get("timeout", 1800)))  # 30 min default
 
     if result["rc"] == 0:

@@ -79,6 +79,28 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+reject_unsafe_output_target() {
+  local output="$1"
+  local canonical=""
+
+  if [[ -b "$output" ]]; then
+    echo "❌  Refusing output target: ${output}" >&2
+    echo "    ISO output must not be an existing block device or canonicalize under /dev." >&2
+    echo "    Use write_usb.sh only during an approved removable-media operation." >&2
+    return 1
+  fi
+
+  canonical="$(readlink -f -- "$output" 2>/dev/null || true)"
+  [[ -n "$canonical" ]] || canonical="$output"
+
+  if [[ "$canonical" == "/dev" || "$canonical" == /dev/* ]]; then
+    echo "❌  Refusing output target: ${output}" >&2
+    echo "    ISO output must not be an existing block device or canonicalize under /dev." >&2
+    echo "    Use write_usb.sh only during an approved removable-media operation." >&2
+    return 1
+  fi
+}
+
 # Detect OS family from suite name
 if [[ "$SUITE" == kali* ]]; then
   BASE_OS="kali"
@@ -115,6 +137,7 @@ if [[ $EUID -ne 0 ]]; then
   echo "    Use: sudo $0 $*"
   exit 1
 fi
+reject_unsafe_output_target "$OUTPUT" || exit 1
 
 # ---- Dependency check -------------------------------------------------------
 REQUIRED_CMDS=(debootstrap mksquashfs xorriso mformat mkdosfs)
@@ -449,6 +472,7 @@ if [[ "$ARCH" == "amd64" ]]; then
     MBR_FLAGS+=(--grub2-mbr "${MBR_HYBRID_IMG}" -partition_offset 16 --mbr-force-bootable)
   fi
 
+  reject_unsafe_output_target "$OUTPUT" || exit 1
   xorriso -as mkisofs \
     -iso-level 3 \
     -full-iso9660-filenames \
@@ -469,6 +493,7 @@ if [[ "$ARCH" == "amd64" ]]; then
     "${ISO_STAGING}" 2>&1 | tail -5
 else
   # ARM64 — EFI only (no MBR/legacy BIOS support)
+  reject_unsafe_output_target "$OUTPUT" || exit 1
   xorriso -as mkisofs \
     -iso-level 3 \
     -full-iso9660-filenames \

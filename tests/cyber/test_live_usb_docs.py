@@ -80,3 +80,14 @@ def test_direct_live_usb_scripts_fail_closed_on_unverified_media() -> None:
 
     assert "WARNING: /sys/block" not in write_script
     assert 'PROVISION_PART="$(_partition_path "$DEVICE" 3)"' in provision_script
+
+
+def test_direct_build_script_rejects_dev_or_block_output_targets() -> None:
+    build_script = (LIVE_USB_DIR / "build_iso.sh").read_text(encoding="utf-8")
+    lowered = build_script.lower()
+
+    assert "reject_unsafe_output_target" in build_script
+    assert build_script.count('reject_unsafe_output_target "$OUTPUT" || exit 1') >= 3
+    assert '[[ -b "$output" ]]' in build_script
+    assert "canonicalize under /dev" in lowered
+    assert "write_usb.sh only during an approved removable-media operation" in lowered
