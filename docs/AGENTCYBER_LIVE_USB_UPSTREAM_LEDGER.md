@@ -806,3 +806,45 @@ Finish/verify the AgentCyber Live USB feature and keep the fork synchronized wit
 
 - Open/review/merge the guarded sync branch into AgentCyber main only after human approval; do not force-push.
 - Future runs should re-check upstream drift, focused Live USB tests, toolset/status visibility, and this ledger. If no upstream drift or new Live USB gap is found, continue treating the lane as verification/no-op.
+
+### 2026-06-22T01:53:29Z — no-op upstream and Live USB verification
+
+**Commands / status**
+
+- `git status --short --branch && git remote -v && git branch --show-current && git rev-parse HEAD`: started clean on `agentcyber/upstream-sync-20260621-194355...origin/agentcyber/upstream-sync-20260621-194355` at `27425c38d7f239091e31c77033ebe30b6d09afee`; no `MERGE_HEAD` or unmerged files.
+- `git fetch upstream main --prune && git fetch origin main --prune && git fetch origin agentcyber/upstream-sync-20260621-194355 --prune`: fetched cleanly with no upstream advancement.
+- Drift after fetch: `HEAD..upstream/main` -> `0`; `upstream/main..HEAD` -> `96`; `HEAD..origin/main` -> `0`; `origin/main..HEAD` -> `270`; `HEAD..origin/agentcyber/upstream-sync-20260621-194355` -> `0`; `origin/agentcyber/upstream-sync-20260621-194355..HEAD` -> `0`.
+- Tips after fetch: `HEAD=27425c38d7f2`; `upstream/main=2b3a4f0af80f`; `origin/main=480559a7edeb`; `origin/agentcyber/upstream-sync-20260621-194355=27425c38d7f2`.
+
+**Changed files**
+
+- `docs/AGENTCYBER_LIVE_USB_UPSTREAM_LEDGER.md`: recorded this no-op verification run.
+- No Live USB implementation, toolset, README, or runbook code/docs were changed because focused verification and review found no new sync or Live USB gap.
+
+**Verification**
+
+- `scripts/run_tests.sh tests/cyber/test_live_usb_docs.py tests/cyber/test_live_usb_tool.py tests/hermes_cli/test_tools_config.py tests/hermes_cli/test_agentcyber_cmd.py tests/hermes_cli/test_agentcyber_wrapper.py tests/agent/test_redact.py tests/gateway/test_cyber_audit_hook.py` -> `307 tests passed, 0 failed`.
+- `scripts/agentcyber status --json` -> `live_usb_visible: true`, `live_usb_enabled: false`, `cyber_enabled: true`, local runtime health `ok: true`, git `dirty: false`, and secret fields as booleans/presence only.
+- `scripts/agentcyber hermes tools list` -> `cyber` enabled and `live_usb` disabled.
+- Conflict marker check outside `.git`, `.venv`, `venv`, `node_modules`, and `.agentcyber-home` -> `0` matches for lines starting `<<<<<<< ` or `>>>>>>> `.
+- `git diff --check && git diff --cached --check` -> passed with no output before the ledger edit.
+- Subagent upstream preservation review: `PASS`; required AgentCyber/Live USB files present/tracked, no unmerged files, local branch matches the remote sync branch, and no upstream sync action is needed.
+- Subagent Live USB safety/docs next-gap review: `PASS`; no smallest safety/test/docs gap worth changing this run.
+
+**Blockers / boundaries**
+
+- No upstream drift was present, so no upstream merge was needed this run.
+- No cron jobs were scheduled, created, updated, paused, resumed, or removed.
+- No default `~/.hermes`, default gateway, default cron, or default profiles were modified.
+- No files were deleted.
+- No USB/block-device writes, ISO builds as root, `sudo`, package installs, hardware actions, external security actions, cloud spend, credential access/disclosure, or public disclosure were performed.
+- Status commands contacted only the configured local Ollama health endpoint and printed booleans/status fields, not secrets.
+
+**Commit / push**
+
+- This is a bounded ledger-only no-op verification entry. After committing and pushing this ledger entry, final verification should check local `HEAD` equals the remote sync branch tip and stop rather than amending the ledger again solely to mention the ledger-only commit SHA.
+
+**Next lane**
+
+- Open/review/merge the guarded sync branch into AgentCyber main only after human approval; do not force-push.
+- Future runs should re-check upstream drift, focused Live USB tests, toolset/status visibility, and this ledger. If no upstream drift or new Live USB gap is found, continue treating the lane as verification/no-op.
