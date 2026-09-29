@@ -106,6 +106,14 @@ Three agent playbooks live in `skills/cybersecurity/` and are available as slash
 | `threat-intel` | Full TI synthesis workflow: extract → enrich in parallel → map to ATT&CK → brief |
 | `ir-copilot` | End-to-end IR lifecycle: triage → investigation → containment → report |
 | `vuln-triage` | CVE backlog prioritisation with bulk parallel triage pattern |
+| `strix-pentest` | Autonomous AI penetration testing and vulnerability scanning with PoCs |
+| `android-adb` | Android device automation via ADB for testing and debugging (optional skill) |
+
+### Plugins & Extensions
+
+| Plugin / Extension | Description |
+|---|---|
+| `needle_swarm` | Growable micro-model skill library (`plugins/needle_swarm/`) backed by Needle / cloud LLMs, hindsight RAG store, and growth dreaming loop (`/needle`). |
 
 ### SOC Audit Log
 
